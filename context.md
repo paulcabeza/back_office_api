@@ -3,6 +3,10 @@
 > **Empresa:** Ganoherb
 > **Pais inicial:** El Salvador (expansion futura a otros paises)
 
+## Convenciones de Git
+
+- **No agregar co-autor de Claude en los commits.** Los commits son del desarrollador unicamente.
+
 ## Estructura del Proyecto
 
 - `back_office_api/` — Backend (FastAPI + Python) — **repo privado**
