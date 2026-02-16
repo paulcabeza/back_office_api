@@ -1,11 +1,12 @@
 """
-Seed script: populates the database with initial roles, permissions, and superadmin user.
+Seed script: populates the database with initial roles, permissions, superadmin user, and product kits.
 
 Usage:
     python -m app.db.seed
 """
 
 import asyncio
+from decimal import Decimal
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -15,6 +16,7 @@ from app.core.security import hash_password
 from app.db.session import async_session_factory, engine
 from app.models.associations import role_permissions
 from app.models.audit_log import AuditLog
+from app.models.product import Product
 from app.models.role import Permission, Role
 from app.models.user import User
 
@@ -178,6 +180,55 @@ async def seed_database():
             print(f"  Superadmin created: {SUPERADMIN_EMAIL}")
         else:
             print(f"  Superadmin already exists: {SUPERADMIN_EMAIL}")
+
+        # 5. Seed product kits
+        print("Seeding product kits...")
+        kits = [
+            {
+                "sku": "KIT-ESP1",
+                "name": "Kit Especial 1",
+                "description": "Kit de inscripcion basico",
+                "category": "kit",
+                "price_public": Decimal("195.00"),
+                "price_distributor": Decimal("195.00"),
+                "pv": Decimal("100.00"),
+                "bv": Decimal("100.00"),
+                "is_kit": True,
+                "kit_tier": "ESP1",
+            },
+            {
+                "sku": "KIT-ESP2",
+                "name": "Kit Especial 2",
+                "description": "Kit de inscripcion intermedio",
+                "category": "kit",
+                "price_public": Decimal("495.00"),
+                "price_distributor": Decimal("495.00"),
+                "pv": Decimal("300.00"),
+                "bv": Decimal("300.00"),
+                "is_kit": True,
+                "kit_tier": "ESP2",
+            },
+            {
+                "sku": "KIT-ESP3",
+                "name": "Kit Especial 3",
+                "description": "Kit de inscripcion premium",
+                "category": "kit",
+                "price_public": Decimal("995.00"),
+                "price_distributor": Decimal("995.00"),
+                "pv": Decimal("600.00"),
+                "bv": Decimal("600.00"),
+                "is_kit": True,
+                "kit_tier": "ESP3",
+            },
+        ]
+        for kit_data in kits:
+            result = await db.execute(
+                select(Product).where(Product.sku == kit_data["sku"])
+            )
+            if result.scalar_one_or_none() is None:
+                db.add(Product(**kit_data))
+        await db.flush()
+        print(f"  {len(kits)} kits ready.")
 
         await db.commit()
         print("Seed complete!")
