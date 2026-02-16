@@ -51,6 +51,10 @@
 - Cumplimiento GDPR / Ley de proteccion de datos local.
 - Retencion de logs minimo 5 anos para cumplimiento fiscal.
 
+### Validaciones de Negocio (App-level)
+
+- **Documentos de afiliado:** Cada afiliado tiene dos pares de documentos: identidad personal (`id_doc_type`/`id_doc_number` — DUI, Cedula, INE, Passport) e identificacion fiscal (`tax_id_type`/`tax_id_number` — NIT, RFC, RUC, RUT). Ambos son nullable en BD, pero el servicio valida que **al menos uno sea proporcionado** al crear o activar un afiliado. Esto soporta el flujo donde un distribuidor inicia con un solo documento y completa el otro despues.
+
 ### Multi-Tenant (Fase Futura)
 
 **Objetivo:** Convertir el sistema en una plataforma SaaS donde multiples empresas MLM puedan tener su propia instancia aislada.
