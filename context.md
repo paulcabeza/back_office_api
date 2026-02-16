@@ -213,4 +213,48 @@ Tenant (futuro)
 - Docker Compose ajustado a solo Redis (PostgreSQL ya no es local).
 - Movidos `context.md` y `modulos.md` a `back_office_api/` (repo privado). `plan.md` permanece en `back_office_portal/` (repo publico, para revision del gerente).
 - Creada estructura base del proyecto FastAPI: carpetas, .env (dev/prod), .gitignore, requirements.txt, config.py.
-- **En progreso:** Sub-fase 1.1 — Fundacion y Auth (base models, SQLAlchemy async, JWT, User model, auth endpoints).
+- **Completado:** Sub-fase 1.1 — Fundacion y Auth.
+
+### 2026-02-16 — Sub-fase 1.1: Fundacion y Auth
+- SQLAlchemy base model con UUID PKs, timestamps, tenant_id nullable (prep multi-tenant).
+- Modelos: `User`, `Role`, `Permission`, `AuditLog` + tablas join `user_roles`, `role_permissions`.
+- Relaciones many-to-many con `primaryjoin`/`secondaryjoin` explicitos (user_roles tiene 2 FKs a users: user_id y assigned_by).
+- RBAC: `User.has_permission(codename)` + dependency `require_permission("resource:action")`.
+- JWT auth: access token (15min) + refresh token (7 dias), passlib/bcrypt para hashing.
+- Endpoints: `POST /auth/login`, `POST /auth/refresh`, `GET /auth/me`.
+- Alembic configurado para async (asyncpg + Neon SSL via `connect_args`).
+- Fix: asyncpg no acepta `sslmode`/`channel_binding` en query string — se limpia URL y pasa SSL via `ssl.create_default_context()`.
+- Fix: passlib incompatible con bcrypt 5.x — fijado `bcrypt==4.0.1`.
+- Seed: 5 roles del sistema, 17 permisos base, superadmin `admin@ganoherb.com.sv`.
+- Primera migracion aplicada a Neon dev.
+- SSH configurado para push a GitHub (ed25519).
+
+### 2026-02-16 — Sub-fase 1.2: Affiliate Enrollment, Products, Orders
+- Modelo `Affiliate`: datos personales, documentos (id_doc + tax_id), red MLM (sponsor_id separado de placement_parent_id + placement_side), acumuladores BV/PV, soft delete.
+- Modelo `Product`: catalogo con soporte de kits (`is_kit`, `kit_tier`), PV/BV por producto.
+- Modelos `Order` / `OrderItem`: ordenes con snapshot de precios al momento de compra, JSONB para shipping_address.
+- Servicio de enrollment (`services/enrollment.py`): crea affiliate + orden de inscripcion en una sola transaccion. Validaciones: sponsor existe, posicion disponible, email unico, kit activo, al menos un documento.
+- Generacion de codigo de distribuidor via secuencia PostgreSQL: `GH-SV-000001`.
+- Generacion de numero de orden: `ORD-YYYYMMDD-XXXX`.
+- Endpoints: `POST /affiliates/enroll`, `GET /affiliates`, `GET /affiliates/{id}`, `GET /products`, `GET /orders/{id}` — todos protegidos por permisos.
+- Seed de kits: ESP1=$195 (PV:100, BV:100), ESP2=$495 (PV:300, BV:300), ESP3=$995 (PV:600, BV:600).
+- Segunda migracion aplicada (affiliates, products, orders, order_items).
+- Test end-to-end exitoso: login → listar kits → inscribir distribuidor → verificar datos.
+
+### Endpoints disponibles (Fase 1 actual)
+```
+POST /api/v1/auth/login           — Autenticacion, retorna JWT tokens
+POST /api/v1/auth/refresh         — Renovar tokens
+GET  /api/v1/auth/me              — Perfil del usuario autenticado
+POST /api/v1/affiliates/enroll    — Inscribir nuevo distribuidor + orden de kit
+GET  /api/v1/affiliates           — Listar distribuidores (filtro por status)
+GET  /api/v1/affiliates/{id}      — Detalle de distribuidor
+GET  /api/v1/products             — Listar productos (filtro kits_only)
+GET  /api/v1/orders/{id}          — Detalle de orden con items
+GET  /health                      — Health check
+```
+
+### Proximos pasos
+- Sub-fase 1.3: Colocacion en arbol binario (derrame/spillover), visualizacion de genealogia.
+- Sub-fase 1.4: Confirmacion de pago de orden → acreditar BV/PV al affiliate y su upline.
+- Sub-fase 1.5: Bono de patrocinio directo.
