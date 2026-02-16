@@ -55,6 +55,15 @@
 
 - **Documentos de afiliado:** Cada afiliado tiene dos pares de documentos: identidad personal (`id_doc_type`/`id_doc_number` — DUI, Cedula, INE, Passport) e identificacion fiscal (`tax_id_type`/`tax_id_number` — NIT, RFC, RUC, RUT). Ambos son nullable en BD, pero el servicio valida que **al menos uno sea proporcionado** al crear o activar un afiliado. Esto soporta el flujo donde un distribuidor inicia con un solo documento y completa el otro despues.
 
+### Known Issues / Gotchas (Desarrollo)
+
+- **asyncpg + Neon SSL:** asyncpg NO acepta `sslmode` ni `channel_binding` en query string de la URL. Se deben limpiar los parametros (`url.split("?")[0]`) y pasar SSL via `connect_args={"ssl": ssl.create_default_context()}`. Aplicado en `app/db/session.py` y `alembic/env.py`.
+- **passlib + bcrypt:** passlib 1.7.4 es incompatible con bcrypt>=4.1. Se fijo `bcrypt==4.0.1` en requirements.txt.
+- **user_roles con 2 FKs a users:** La tabla `user_roles` tiene `user_id` y `assigned_by` (ambos FK a users). Las relaciones en SQLAlchemy requieren `primaryjoin`/`secondaryjoin` explicitos.
+- **Lazy load en async:** Cuando se crean objetos en memoria (no via query), las relaciones lazy no se cargan automaticamente. Usar `await db.refresh(obj, ["relationship"])` antes de serializar con Pydantic.
+- **Git:** Identidad configurada per-repo (no global). SSH auth con ed25519. Remote: `git@github.com:paulcabeza/back_office_api.git`.
+- **venv:** En `.venv/` dentro de `back_office_api/`. Python 3.12.
+
 ### Multi-Tenant (Fase Futura)
 
 **Objetivo:** Convertir el sistema en una plataforma SaaS donde multiples empresas MLM puedan tener su propia instancia aislada.
