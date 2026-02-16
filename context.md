@@ -145,6 +145,26 @@ Tenant (futuro)
 
 ---
 
+## Entregable Actual (En Progreso)
+
+> **Objetivo:** Un usuario con permisos (ej: gerente de ventas) puede iniciar sesion en el portal, ver los kits disponibles, inscribir un nuevo distribuidor seleccionando un paquete (ESP1=$195, ESP2=$495, ESP3=$995), y ver la confirmacion con el codigo generado (GH-SV-XXXXXX) y puntos asignados.
+
+**Alcance del entregable:**
+- [x] API: Autenticacion JWT (login, refresh, me)
+- [x] API: RBAC con permisos granulares
+- [x] API: Catalogo de productos/kits
+- [x] API: Inscripcion de distribuidor (affiliate + orden + codigo + PV/BV)
+- [x] API: Listado y detalle de distribuidores
+- [x] API: Detalle de ordenes
+- [ ] Frontend: Login del usuario administrativo
+- [ ] Frontend: Vista de kits disponibles
+- [ ] Frontend: Formulario de inscripcion de distribuidor
+- [ ] Frontend: Confirmacion con codigo y datos del nuevo distribuidor
+
+**Fuera de alcance para este entregable:** Arbol binario (colocacion/spillover), bonos, comisiones, billetera, genealogia.
+
+---
+
 ## Roadmap de Desarrollo por Fases
 
 ### Fase 1 — MVP (Nucleo del Negocio)
@@ -263,7 +283,14 @@ GET  /api/v1/orders/{id}          — Detalle de orden con items
 GET  /health                      — Health check
 ```
 
-### Proximos pasos
+### Proximos pasos (Entregable)
+- Frontend: Setup del proyecto React + TypeScript + Shadcn/ui + Tailwind.
+- Frontend: Pantalla de login.
+- Frontend: Vista de kits disponibles.
+- Frontend: Formulario de inscripcion de distribuidor.
+- Frontend: Pantalla de confirmacion (codigo generado, datos, resumen de orden).
+
+### Despues del entregable (Fase 1 continua)
 - Sub-fase 1.3: Colocacion en arbol binario (derrame/spillover), visualizacion de genealogia.
 - Sub-fase 1.4: Confirmacion de pago de orden → acreditar BV/PV al affiliate y su upline.
 - Sub-fase 1.5: Bono de patrocinio directo.
