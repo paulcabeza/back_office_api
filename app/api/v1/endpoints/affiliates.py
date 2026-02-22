@@ -1,7 +1,8 @@
+import logging
 import uuid
 
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.deps import require_permission
@@ -10,7 +11,10 @@ from app.models.affiliate import Affiliate
 from app.models.user import User
 from app.schemas.affiliate import AffiliateListResponse, AffiliateResponse, EnrollmentRequest
 from app.schemas.order import EnrollmentResponse, OrderResponse
+from app.services.email import send_enrollment_notification_admin, send_welcome_distributor
 from app.services.enrollment import enroll_affiliate
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/affiliates", tags=["affiliates"])
 
@@ -23,6 +27,51 @@ async def enroll(
 ):
     """Enroll a new affiliate: creates the affiliate + enrollment order (kit purchase)."""
     affiliate, order = await enroll_affiliate(db, body, current_user.id)
+
+    # Send notification emails (non-blocking, failures are logged but don't affect response)
+    kit_item = order.items[0] if order.items else None
+    kit_name = kit_item.product.name if kit_item else body.kit_tier
+    kit_price = str(order.total)
+
+    placement_info = None
+    if affiliate.placement_parent_id and affiliate.placement_side:
+        placement_info = f"Pierna {affiliate.placement_side}"
+
+    sponsor_name = None
+    if affiliate.sponsor_id:
+        result = await db.execute(
+            select(Affiliate.first_name, Affiliate.last_name).where(
+                Affiliate.id == affiliate.sponsor_id
+            )
+        )
+        sponsor_row = result.one_or_none()
+        if sponsor_row:
+            sponsor_name = f"{sponsor_row.first_name} {sponsor_row.last_name}"
+
+    try:
+        send_welcome_distributor(
+            to_email=affiliate.email,
+            first_name=affiliate.first_name,
+            last_name=affiliate.last_name,
+            affiliate_code=affiliate.affiliate_code,
+            kit_name=kit_name,
+            kit_price=kit_price,
+            sponsor_name=sponsor_name,
+        )
+        send_enrollment_notification_admin(
+            admin_email=current_user.email,
+            admin_name=current_user.full_name,
+            affiliate_code=affiliate.affiliate_code,
+            affiliate_name=f"{affiliate.first_name} {affiliate.last_name}",
+            affiliate_email=affiliate.email,
+            kit_name=kit_name,
+            kit_price=kit_price,
+            order_number=order.order_number,
+            placement_info=placement_info,
+        )
+    except Exception:
+        logger.exception("Failed to send enrollment emails for %s", affiliate.affiliate_code)
+
     return EnrollmentResponse(
         affiliate=AffiliateResponse.model_validate(affiliate),
         order=OrderResponse.model_validate(order),

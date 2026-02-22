@@ -21,5 +21,8 @@ email-validator==2.2.0
 # Redis
 redis==5.1.1
 
+# Email
+sendgrid==6.11.0
+
 # Utilities
 python-dotenv==1.0.1
