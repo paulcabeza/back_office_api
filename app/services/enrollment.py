@@ -7,13 +7,17 @@ import uuid
 from datetime import datetime, timezone
 
 from fastapi import HTTPException, status
-from sqlalchemy import func, select, text
+from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.security import hash_password
 from app.models.affiliate import Affiliate
+from app.models.associations import user_roles
 from app.models.audit_log import AuditLog
 from app.models.order import Order, OrderItem
 from app.models.product import Product
+from app.models.role import Role
+from app.models.user import User
 from app.schemas.affiliate import EnrollmentRequest
 
 
@@ -101,7 +105,16 @@ async def enroll_affiliate(
                 detail=f"Position '{request.placement_side}' under this parent is already taken",
             )
 
-    # 3. Check email uniqueness
+    # 3. Check email uniqueness (in both users and affiliates tables)
+    result = await db.execute(
+        select(User).where(User.email == request.email)
+    )
+    if result.scalar_one_or_none() is not None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="An account with this email already exists",
+        )
+
     result = await db.execute(
         select(Affiliate).where(
             Affiliate.email == request.email,
@@ -133,8 +146,35 @@ async def enroll_affiliate(
     affiliate_code = await generate_affiliate_code(db, request.country_code)
     order_number = await generate_order_number(db)
 
-    # 6. Create affiliate
+    # 6. Create user account for the distributor
+    user = User(
+        email=request.email,
+        password_hash=hash_password(request.password),
+        first_name=request.first_name,
+        last_name=request.last_name,
+        is_active=True,
+        is_superadmin=False,
+    )
+    db.add(user)
+    await db.flush()  # get user.id
+
+    # Assign distributor role
+    result = await db.execute(
+        select(Role).where(Role.name == "distributor")
+    )
+    distributor_role = result.scalar_one_or_none()
+    if distributor_role:
+        await db.execute(
+            user_roles.insert().values(
+                user_id=user.id,
+                role_id=distributor_role.id,
+                assigned_by=created_by_user_id,
+            )
+        )
+
+    # 7. Create affiliate linked to user
     affiliate = Affiliate(
+        user_id=user.id,
         affiliate_code=affiliate_code,
         country_code=request.country_code.upper(),
         first_name=request.first_name,
@@ -160,7 +200,7 @@ async def enroll_affiliate(
     db.add(affiliate)
     await db.flush()  # get affiliate.id
 
-    # 7. Create enrollment order
+    # 8. Create enrollment order
     order_item = OrderItem(
         product_id=kit.id,
         quantity=1,
@@ -186,7 +226,7 @@ async def enroll_affiliate(
     )
     db.add(order)
 
-    # 8. Audit log
+    # 9. Audit log
     audit = AuditLog(
         tenant_id=affiliate.tenant_id,
         user_id=created_by_user_id,

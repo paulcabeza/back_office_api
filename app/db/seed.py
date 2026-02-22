@@ -28,6 +28,7 @@ ROLES = [
     {"name": "sales_manager", "display_name": "Gerente de Ventas", "is_system": True},
     {"name": "operations_manager", "display_name": "Gerente de Operaciones", "is_system": True},
     {"name": "support", "display_name": "Soporte", "is_system": True},
+    {"name": "distributor", "display_name": "Distribuidor", "is_system": True},
 ]
 
 PERMISSIONS = [
@@ -74,6 +75,11 @@ ROLE_PERMISSIONS = {
         "audit:read",
     ],
     "support": [
+        "affiliates:read",
+        "orders:read",
+        "products:read",
+    ],
+    "distributor": [
         "affiliates:read",
         "orders:read",
         "products:read",

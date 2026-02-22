@@ -38,6 +38,9 @@ class EnrollmentRequest(BaseModel):
     # Kit selection
     kit_tier: Literal["ESP1", "ESP2", "ESP3"]
 
+    # Distributor login credentials
+    password: str = Field(min_length=8, max_length=128)
+
     @model_validator(mode="after")
     def validate_documents(self):
         has_id = self.id_doc_type and self.id_doc_number

@@ -26,8 +26,10 @@
 | **ORM** | SQLAlchemy 2.0 async + Alembic (migraciones) |
 | **Cache** | Redis 7 (Docker Compose local) |
 | **Cola de Tareas** | Celery + Redis (calculos de comisiones asincrono) |
-| **Frontend** | React + TypeScript |
-| **Estado Frontend** | Zustand o Redux Toolkit |
+| **Frontend** | React + TypeScript (Vite) |
+| **Estado Frontend** | Zustand |
+| **Routing Frontend** | React Router v7 |
+| **HTTP Client** | Axios |
 | **UI Components** | Shadcn/ui + Tailwind CSS |
 | **Autenticacion** | JWT (access + refresh tokens) |
 | **Dependencias Python** | pip + venv (requirements.txt) |
@@ -287,12 +289,94 @@ GET  /api/v1/orders/{id}          — Detalle de orden con items
 GET  /health                      — Health check
 ```
 
-### Proximos pasos (Entregable)
-- Frontend: Setup del proyecto React + TypeScript + Shadcn/ui + Tailwind.
-- Frontend: Pantalla de login.
-- Frontend: Vista de kits disponibles.
-- Frontend: Formulario de inscripcion de distribuidor.
-- Frontend: Pantalla de confirmacion (codigo generado, datos, resumen de orden).
+### Plan del Frontend (Entregable)
+
+**Decisiones tecnicas:**
+- Vite + React + TypeScript, npm como gestor de paquetes.
+- Zustand para estado global (auth: tokens, usuario, login/logout).
+- React Router v7 para navegacion, rutas protegidas con componente `ProtectedRoute`.
+- Axios con interceptores para auth (Bearer token) y refresh automatico (patron de cola de retry en 401).
+- Shadcn/ui + Tailwind CSS para UI. Componentes instalados via CLI.
+- Formularios controlados con `useState` y validacion manual (sin react-hook-form/zod — un solo formulario no justifica la dependencia).
+- Labels en espanol, codigo en ingles. Sin i18n formal (solo mercado SV por ahora).
+- Tokens en `localStorage` (back office interno, riesgo XSS aceptable).
+- API retorna Decimals como strings; parsear con `Number()` al recibir.
+
+**Estructura de carpetas:**
+```
+back_office_portal/src/
+  main.tsx, App.tsx, index.css
+  api/
+    client.ts           — Axios instance + interceptors (auth, refresh, 401 retry queue)
+    auth.ts             — login(), refreshToken(), getMe()
+    products.ts         — getKits()
+    affiliates.ts       — enrollAffiliate()
+  stores/
+    auth-store.ts       — Zustand: tokens, user, isAuthenticated, login/logout, initialize
+  types/
+    auth.ts             — LoginRequest, TokenResponse, User, Role
+    product.ts          — Product
+    affiliate.ts        — EnrollmentRequest, AffiliateResponse
+    order.ts            — OrderResponse, OrderItemResponse, EnrollmentResponse
+  lib/
+    utils.ts            — cn(), formatCurrency(), formatDate()
+  components/
+    ui/                 — Shadcn (auto-generated)
+    layout/
+      app-layout.tsx    — Shell: header + Outlet
+      header.tsx        — User info + logout
+    shared/
+      protected-route.tsx
+      loading-spinner.tsx
+  pages/
+    login/login-page.tsx
+    enrollment/
+      kit-selection-page.tsx
+      enrollment-form-page.tsx
+      confirmation-page.tsx
+```
+
+**Rutas:**
+| Path | Componente | Auth |
+|------|-----------|------|
+| `/login` | LoginPage | No |
+| `/enrollment/kits` | KitSelectionPage | Si |
+| `/enrollment/form` | EnrollmentFormPage | Si |
+| `/enrollment/confirmation` | ConfirmationPage | Si |
+| `/` | Redirect a `/enrollment/kits` | Si |
+
+**Pantallas:**
+1. **Login** — Card centrado, email + password, errores inline (401→credenciales, 423→bloqueado). Redirige a `/enrollment/kits`.
+2. **Seleccion de Kit** — Grid de 3 cards (ESP1=$195, ESP2=$495, ESP3=$995) con PV/BV como badges. Al seleccionar → navigate con state al form.
+3. **Formulario de Inscripcion** — Kit seleccionado (readonly), datos personales, documentos (al menos 1 par requerido: id_doc O tax_id), direccion, patrocinador (opcional). Submit → POST /affiliates/enroll → navigate a confirmacion.
+4. **Confirmacion** — Codigo de distribuidor (GH-SV-XXXXXX resaltado), datos del afiliado, resumen de orden con PV/BV y total, boton "Inscribir Otro".
+
+**Orden de implementacion:**
+1. Init proyecto (Vite + deps + Tailwind + Shadcn)
+2. Tipos TypeScript (`types/*.ts`)
+3. API client (`api/client.ts` con Axios + request interceptor)
+4. Auth store (`stores/auth-store.ts` con Zustand + localStorage)
+5. API auth (`api/auth.ts`)
+6. Protected route + Router + App.tsx
+7. Login page (primera pantalla funcional end-to-end)
+8. Refresh interceptor (completar `client.ts` con cola de retry)
+9. Layout (app-layout + header)
+10. API products + Kit selection page
+11. API affiliates + Enrollment form page
+12. Confirmation page
+
+### 2026-02-22 — Documentacion de Flujos + Enrollment crea User
+
+- Creado `back_office_api/flujos.md`: 10 flujos operativos detallados del MVP (login, inscripcion, pago, genealogia, bonos, etc.).
+- Agregado resumen simplificado de flujos en `back_office_portal/plan.md` seccion 7 (version para gerencia, sin detalles tecnicos).
+- **Enrollment modificado para crear User + Affiliate:**
+  - Nuevo campo `password` (min 8 chars) en `EnrollmentRequest`.
+  - El servicio ahora crea un `User` (con password hasheada bcrypt) y le asigna rol `distributor`, antes de crear el `Affiliate` vinculado via `user_id`.
+  - Validacion de unicidad de email ahora verifica en ambas tablas (`users` y `affiliates`).
+- Nuevo rol `distributor` agregado al seed (permisos: `affiliates:read`, `orders:read`, `products:read`).
+- Seed ejecutado: 6 roles en BD (antes 5).
+- Decisiones del frontend documentadas en context.md: Vite, Zustand, React Router v7, Axios, Shadcn/ui.
+- Proveedor de email: SendGrid (por integrar).
 
 ### Despues del entregable (Fase 1 continua)
 - Sub-fase 1.3: Colocacion en arbol binario (derrame/spillover), visualizacion de genealogia.
