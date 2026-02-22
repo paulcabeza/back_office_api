@@ -9,10 +9,11 @@ from app.core.deps import require_permission
 from app.db.session import get_db
 from app.models.affiliate import Affiliate
 from app.models.user import User
-from app.schemas.affiliate import AffiliateListResponse, AffiliateResponse, EnrollmentRequest
+from app.schemas.affiliate import AffiliateListResponse, AffiliateResponse, EnrollmentRequest, TreeNodeResponse
 from app.schemas.order import EnrollmentResponse, OrderResponse
 from app.services.email import send_enrollment_notification_admin, send_welcome_distributor
 from app.services.enrollment import enroll_affiliate
+from app.services.tree import get_binary_tree
 
 logger = logging.getLogger(__name__)
 
@@ -115,3 +116,22 @@ async def get_affiliate(
         from fastapi import HTTPException, status as http_status
         raise HTTPException(status_code=http_status.HTTP_404_NOT_FOUND, detail="Affiliate not found")
     return AffiliateResponse.model_validate(affiliate)
+
+
+@router.get("/{affiliate_id}/tree", response_model=TreeNodeResponse)
+async def get_affiliate_tree(
+    affiliate_id: uuid.UUID,
+    current_user: User = Depends(require_permission("affiliates:read")),
+    db: AsyncSession = Depends(get_db),
+    depth: int = Query(default=3, ge=1, le=10, description="Tree depth levels"),
+):
+    """Get the binary tree starting from an affiliate, up to `depth` levels."""
+    from fastapi import HTTPException, status as http_status
+
+    tree = await get_binary_tree(db, affiliate_id, depth)
+    if tree is None:
+        raise HTTPException(
+            status_code=http_status.HTTP_404_NOT_FOUND,
+            detail="Affiliate not found",
+        )
+    return tree

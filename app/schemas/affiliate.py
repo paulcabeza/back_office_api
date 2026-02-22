@@ -92,3 +92,18 @@ class AffiliateListResponse(BaseModel):
     enrolled_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class TreeNodeResponse(BaseModel):
+    """A node in the binary tree with optional children."""
+    id: uuid.UUID
+    affiliate_code: str
+    full_name: str
+    status: str
+    current_rank: str
+    pv_current_period: Decimal
+    bv_left_total: Decimal
+    bv_right_total: Decimal
+    enrolled_at: datetime
+    left_child: "TreeNodeResponse | None" = None
+    right_child: "TreeNodeResponse | None" = None

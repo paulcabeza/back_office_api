@@ -287,6 +287,7 @@ GET  /api/v1/affiliates/{id}      — Detalle de distribuidor
 GET  /api/v1/products             — Listar productos (filtro kits_only)
 GET   /api/v1/orders/{id}              — Detalle de orden con items
 PATCH /api/v1/orders/{id}/confirm-payment — Confirmar pago, acreditar BV/PV, activar distribuidor
+GET  /api/v1/affiliates/{id}/tree        — Arbol binario desde un nodo (depth configurable)
 GET   /health                            — Health check
 ```
 
