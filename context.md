@@ -285,8 +285,9 @@ POST /api/v1/affiliates/enroll    — Inscribir nuevo distribuidor + orden de ki
 GET  /api/v1/affiliates           — Listar distribuidores (filtro por status)
 GET  /api/v1/affiliates/{id}      — Detalle de distribuidor
 GET  /api/v1/products             — Listar productos (filtro kits_only)
-GET  /api/v1/orders/{id}          — Detalle de orden con items
-GET  /health                      — Health check
+GET   /api/v1/orders/{id}              — Detalle de orden con items
+PATCH /api/v1/orders/{id}/confirm-payment — Confirmar pago, acreditar BV/PV, activar distribuidor
+GET   /health                            — Health check
 ```
 
 ### Plan del Frontend (Entregable)
@@ -377,6 +378,11 @@ back_office_portal/src/
 - Seed ejecutado: 6 roles en BD (antes 5).
 - Decisiones del frontend documentadas en context.md: Vite, Zustand, React Router v7, Axios, Shadcn/ui.
 - Proveedor de email: SendGrid (por integrar).
+- **Endpoint de confirmacion de pago implementado:**
+  - `PATCH /api/v1/orders/{id}/confirm-payment` (permiso `orders:update`).
+  - Recibe `payment_method` y `payment_reference`.
+  - En una transaccion: marca orden como `paid`, acredita PV al distribuidor, acredita BV a toda la linea ascendente del arbol binario, activa distribuidor si es orden de inscripcion.
+  - Servicio `app/services/payment.py` con funcion `_accrue_bv_to_upline()` que recorre el arbol hacia arriba.
 
 ### Despues del entregable (Fase 1 continua)
 - Sub-fase 1.3: Colocacion en arbol binario (derrame/spillover), visualizacion de genealogia.

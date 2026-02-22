@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from decimal import Decimal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.schemas.affiliate import AffiliateResponse
 from app.schemas.product import ProductResponse
@@ -39,6 +39,12 @@ class OrderResponse(BaseModel):
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class ConfirmPaymentRequest(BaseModel):
+    """Request body for confirming payment on an order."""
+    payment_method: str = Field(min_length=1, max_length=30)
+    payment_reference: str | None = Field(default=None, max_length=100)
 
 
 class EnrollmentResponse(BaseModel):
