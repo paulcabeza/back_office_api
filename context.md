@@ -378,14 +378,27 @@ back_office_portal/src/
 - Nuevo rol `distributor` agregado al seed (permisos: `affiliates:read`, `orders:read`, `products:read`).
 - Seed ejecutado: 6 roles en BD (antes 5).
 - Decisiones del frontend documentadas en context.md: Vite, Zustand, React Router v7, Axios, Shadcn/ui.
-- Proveedor de email: SendGrid (por integrar).
+- Proveedor de email: SendGrid integrado.
+- **SendGrid integrado:**
+  - `app/services/email.py`: funciones `send_welcome_distributor()` y `send_enrollment_notification_admin()`.
+  - Config: `SENDGRID_API_KEY`, `SENDGRID_FROM_EMAIL`, `SENDGRID_FROM_NAME`, `SENDGRID_ENABLED` (false en dev, loguea en consola).
+  - Se llama desde el endpoint de enrollment (no bloquea, errores se loguean).
+  - Pendiente: configurar API key de SendGrid y activar (`SENDGRID_ENABLED=true`).
 - **Endpoint de confirmacion de pago implementado:**
   - `PATCH /api/v1/orders/{id}/confirm-payment` (permiso `orders:update`).
   - Recibe `payment_method` y `payment_reference`.
   - En una transaccion: marca orden como `paid`, acredita PV al distribuidor, acredita BV a toda la linea ascendente del arbol binario, activa distribuidor si es orden de inscripcion.
   - Servicio `app/services/payment.py` con funcion `_accrue_bv_to_upline()` que recorre el arbol hacia arriba.
+- **Endpoint de arbol binario implementado:**
+  - `GET /api/v1/affiliates/{id}/tree?depth=3` (permiso `affiliates:read`).
+  - Retorna estructura recursiva: cada nodo tiene `left_child` y `right_child` con datos del distribuidor.
+  - Servicio `app/services/tree.py` con funciones `get_binary_tree()` y `_build_node()`.
+  - Profundidad configurable (1-10, default 3).
+- **Frontend iniciado:**
+  - Proyecto Vite + React + TypeScript creado en `back_office_portal/`.
+  - Node.js 22 LTS instalado via nvm.
+  - Pendiente: instalar dependencias (Tailwind, Shadcn, Zustand, React Router, Axios), crear estructura de carpetas y pantallas.
 
 ### Despues del entregable (Fase 1 continua)
-- Sub-fase 1.3: Colocacion en arbol binario (derrame/spillover), visualizacion de genealogia.
-- Sub-fase 1.4: Confirmacion de pago de orden → acreditar BV/PV al affiliate y su upline.
+- Sub-fase 1.3: Colocacion en arbol binario (derrame/spillover automatico).
 - Sub-fase 1.5: Bono de patrocinio directo.
