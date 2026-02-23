@@ -25,9 +25,6 @@ from app.models.user import User
 ROLES = [
     {"name": "super_admin", "display_name": "Super Administrador", "is_system": True},
     {"name": "admin", "display_name": "Administrador", "is_system": True},
-    {"name": "sales_manager", "display_name": "Gerente de Ventas", "is_system": True},
-    {"name": "operations_manager", "display_name": "Gerente de Operaciones", "is_system": True},
-    {"name": "support", "display_name": "Soporte", "is_system": True},
     {"name": "distributor", "display_name": "Distribuidor", "is_system": True},
 ]
 
@@ -57,27 +54,18 @@ PERMISSIONS = [
     {"codename": "audit:read", "resource": "audit", "action": "read", "description": "View audit logs"},
 ]
 
-# Roles that get ALL permissions
-FULL_ACCESS_ROLES = ["super_admin", "admin"]
+# super_admin gets ALL permissions (users:*, affiliates:*, orders:*, etc.)
+FULL_ACCESS_ROLES = ["super_admin"]
 
-# Role-specific permissions for non-admin roles
+# Role-specific permissions
 ROLE_PERMISSIONS = {
-    "sales_manager": [
-        "affiliates:create", "affiliates:read", "affiliates:update",
+    "admin": [
+        # Everything operational, but NOT user management
+        "affiliates:create", "affiliates:read", "affiliates:update", "affiliates:delete",
         "orders:create", "orders:read", "orders:update",
-        "products:read",
-    ],
-    "operations_manager": [
-        "affiliates:read", "affiliates:update",
-        "orders:read", "orders:update",
         "products:read", "products:create", "products:update",
-        "users:read",
+        "roles:read",
         "audit:read",
-    ],
-    "support": [
-        "affiliates:read",
-        "orders:read",
-        "products:read",
     ],
     "distributor": [
         "affiliates:read",
@@ -122,6 +110,22 @@ async def seed_database():
             role_map[role.name] = role
         print(f"  {len(role_map)} roles ready.")
 
+        # 2b. Remove obsolete roles (and their permission assignments)
+        obsolete_roles = ["sales_manager", "operations_manager", "support"]
+        for obs_name in obsolete_roles:
+            result = await db.execute(
+                select(Role).where(Role.name == obs_name)
+            )
+            obs_role = result.scalar_one_or_none()
+            if obs_role is not None:
+                await db.execute(
+                    role_permissions.delete().where(
+                        role_permissions.c.role_id == obs_role.id
+                    )
+                )
+                await db.delete(obs_role)
+                print(f"  Removed obsolete role: {obs_name}")
+
         # 3. Assign permissions to roles
         print("Assigning permissions to roles...")
         for role_name in FULL_ACCESS_ROLES:
@@ -139,6 +143,15 @@ async def seed_database():
                             role_id=role.id, permission_id=perm.id
                         )
                     )
+
+        # Clear existing permissions for non-full-access roles before reassigning
+        for role_name in ROLE_PERMISSIONS:
+            if role_name in role_map:
+                await db.execute(
+                    role_permissions.delete().where(
+                        role_permissions.c.role_id == role_map[role_name].id
+                    )
+                )
 
         for role_name, perm_codenames in ROLE_PERMISSIONS.items():
             role = role_map[role_name]
