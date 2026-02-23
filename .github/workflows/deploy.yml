@@ -1,0 +1,44 @@
+name: Deploy Backend
+
+on:
+  push:
+    branches: [master]
+
+env:
+  IMAGE: ghcr.io/paulcabeza/back_office_api:latest
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ env.IMAGE }}
+
+      - name: Deploy to Linode
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.LINODE_HOST }}
+          username: ${{ secrets.LINODE_USER }}
+          key: ${{ secrets.LINODE_SSH_KEY }}
+          script: |
+            cd /opt/ganoherb
+            docker compose pull backend
+            docker compose up -d backend
+            docker compose exec backend alembic upgrade head
