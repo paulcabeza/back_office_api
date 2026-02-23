@@ -35,7 +35,7 @@
 | **Dependencias Python** | pip + venv (requirements.txt) |
 | **Almacenamiento** | AWS S3 / MinIO |
 | **Email** | SendGrid / AWS SES |
-| **Despliegue** | Docker + Docker Compose (dev), AWS/GCP (prod) |
+| **Despliegue** | Docker + Docker Compose, Linode Nanode 1GB (prod) |
 | **CI/CD** | GitHub Actions |
 | **Monitoreo** | Sentry (errores), Prometheus + Grafana (metricas) |
 
@@ -398,6 +398,36 @@ back_office_portal/src/
   - Proyecto Vite + React + TypeScript creado en `back_office_portal/`.
   - Node.js 22 LTS instalado via nvm.
   - Pendiente: instalar dependencias (Tailwind, Shadcn, Zustand, React Router, Axios), crear estructura de carpetas y pantallas.
+
+### 2026-02-22 — Deploy a Produccion (Linode)
+
+- **Servidor:** Linode Nanode 1GB ($5/mes), Ubuntu 24.04 LTS, IP `96.126.117.59`.
+- **Arquitectura en produccion:**
+  - Nginx (Alpine): reverse proxy + sirve SPA estatica.
+  - Backend: imagen Docker en GHCR (`ghcr.io/paulcabeza/back_office_api:latest`), uvicorn 1 worker.
+  - Redis 7 (Alpine): cache sin persistencia, 32MB max.
+  - Frontend: archivos estaticos en `/opt/ganoherb/portal/` (NO es container).
+  - DB: PostgreSQL 17 en Neon (instancia de produccion separada de dev).
+- **Estructura en servidor:** `/opt/ganoherb/` con `docker-compose.yml`, `.env`, `nginx/conf.d/default.conf`, `portal/`.
+- **CI/CD con GitHub Actions:**
+  - Backend (`back_office_api`): push a master → build imagen Docker → push a GHCR → SSH al Linode → `docker compose pull && up -d` → `alembic upgrade head`.
+  - Portal (`back_office_portal`): push a master → `npm ci && npm run build` (con `VITE_API_BASE_URL=/api/v1`) → SCP `dist/*` a `/opt/ganoherb/portal/`.
+- **GitHub Secrets** configurados en ambos repos: `LINODE_HOST`, `LINODE_USER`, `LINODE_SSH_KEY`.
+- **Archivos creados:**
+  - `back_office_api/Dockerfile` — python:3.12-slim, uvicorn 1 worker.
+  - `back_office_api/.dockerignore`
+  - `back_office_api/.github/workflows/deploy.yml`
+  - `back_office_portal/.github/workflows/deploy.yml`
+  - `deploy/` (en root del monorepo, referencia): `docker-compose.yml`, `nginx/conf.d/default.conf`, `.env.example`, `setup-server.sh`.
+- **Cambios al frontend:**
+  - `client.ts`: URL base cambiada de hardcoded `localhost:8000` a `import.meta.env.VITE_API_BASE_URL || "/api/v1"`.
+  - `.env` local creado con `VITE_API_BASE_URL=http://localhost:8000/api/v1` (en `.gitignore`).
+- **Servidor configurado:** swap 1GB, Docker, UFW (22/80/443), usuario `deploy` con acceso SSH y grupo docker.
+- **Primer deploy exitoso:** ambos workflows completados, 3 containers corriendo, `/health` → OK, SPA cargando, API respondiendo via proxy.
+- **Seed ejecutado en produccion:** 6 roles, 17 permisos, 3 kits, superadmin.
+- **Dominios planificados (pendiente DNS):**
+  - `ganoherb.com.sv` → WordPress (sitio principal, futuro).
+  - `backoffice.ganoherb.com.sv` → SPA + API.
 
 ### Despues del entregable (Fase 1 continua)
 - Sub-fase 1.3: Colocacion en arbol binario (derrame/spillover automatico).
