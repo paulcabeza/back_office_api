@@ -438,7 +438,7 @@ back_office_portal/src/
   - `.env` local creado con `VITE_API_BASE_URL=http://localhost:8000/api/v1` (en `.gitignore`).
 - **Servidor configurado:** swap 1GB, Docker, UFW (22/80/443), usuario `deploy` con acceso SSH y grupo docker.
 - **Primer deploy exitoso:** ambos workflows completados, 3 containers corriendo, `/health` → OK, SPA cargando, API respondiendo via proxy.
-- **Seed ejecutado en produccion:** 6 roles, 17 permisos, 3 kits, superadmin.
+- **Seed ejecutado en produccion:** 3 roles (super_admin, admin, distributor), 17 permisos, 3 kits, superadmin.
 - **Dominios planificados (pendiente DNS):**
   - `ganoherb.com.sv` → WordPress (sitio principal, futuro).
   - `backoffice.ganoherb.com.sv` → SPA + API.
@@ -465,6 +465,14 @@ back_office_portal/src/
   - Archivos nuevos: `types/user.ts`, `api/users.ts`, `pages/users/users-page.tsx`, `pages/users/create-user-page.tsx`, `pages/users/edit-user-page.tsx`.
 - **Color primario del frontend cambiado** de teal (`oklch(0.432 0.1 155)`) a rojo coral Ganoherb `#e9514b` (`oklch(0.588 0.18 25)`). Destructive diferenciado a rojo oscuro (`oklch(0.45 0.22 30)`).
 - Router registrado en `app/api/v1/router.py`.
+- **Roles simplificados a 3** (antes eran 6):
+  - `super_admin` (Super Administrador) — acceso total, unico rol que puede gestionar usuarios (`users:*`).
+  - `admin` (Administrador) — acceso operativo: afiliados, ordenes, productos, audit. NO puede crear/editar usuarios.
+  - `distributor` (Distribuidor) — solo lectura (se asigna automaticamente al inscribir).
+  - Eliminados: `sales_manager`, `operations_manager`, `support` (innecesarios para MVP).
+  - Seed actualizado con limpieza de roles obsoletos y reasignacion de permisos del admin.
+- **Workflow del portal corregido** — se agrega `docker compose restart nginx` despues del SCP para evitar 403 por cache de volumen.
+- **Seed ejecutado en produccion** — roles limpiados, migracion aplicada via CI/CD.
 
 ### Despues del entregable (Fase 1 continua)
 - Sub-fase 1.3: Colocacion en arbol binario (derrame/spillover automatico).
