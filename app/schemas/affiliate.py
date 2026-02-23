@@ -75,6 +75,7 @@ class AffiliateResponse(BaseModel):
     pv_current_period: Decimal
     bv_left_total: Decimal
     bv_right_total: Decimal
+    created_by_user_id: uuid.UUID | None
     enrolled_at: datetime
     created_at: datetime
 

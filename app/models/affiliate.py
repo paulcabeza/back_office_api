@@ -33,6 +33,10 @@ class Affiliate(BaseModel):
     user_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id"), unique=True, nullable=True
     )
+    # Who (admin/staff) created this affiliate record
+    created_by_user_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id"), nullable=True
+    )
     affiliate_code: Mapped[str] = mapped_column(
         String(20), nullable=False, unique=True, index=True
     )

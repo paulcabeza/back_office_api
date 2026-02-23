@@ -175,6 +175,7 @@ async def enroll_affiliate(
     # 7. Create affiliate linked to user
     affiliate = Affiliate(
         user_id=user.id,
+        created_by_user_id=created_by_user_id,
         affiliate_code=affiliate_code,
         country_code=request.country_code.upper(),
         first_name=request.first_name,

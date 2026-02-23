@@ -45,6 +45,25 @@ class UserResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class UpdateUserRequest(BaseModel):
+    email: EmailStr | None = None
+    first_name: str | None = Field(default=None, min_length=1, max_length=100)
+    last_name: str | None = Field(default=None, min_length=1, max_length=100)
+    is_active: bool | None = None
+    role_id: uuid.UUID | None = None
+
+
+class UserListResponse(BaseModel):
+    id: uuid.UUID
+    email: str
+    full_name: str
+    is_active: bool
+    roles: list["RoleResponse"]
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
 class RoleResponse(BaseModel):
     id: uuid.UUID
     name: str

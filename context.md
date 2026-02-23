@@ -287,16 +287,21 @@ Tenant (futuro)
 
 ### Endpoints disponibles (Fase 1 actual)
 ```
-POST /api/v1/auth/login           — Autenticacion, retorna JWT tokens
-POST /api/v1/auth/refresh         — Renovar tokens
-GET  /api/v1/auth/me              — Perfil del usuario autenticado
-POST /api/v1/affiliates/enroll    — Inscribir nuevo distribuidor + orden de kit
-GET  /api/v1/affiliates           — Listar distribuidores (filtro por status)
-GET  /api/v1/affiliates/{id}      — Detalle de distribuidor
-GET  /api/v1/products             — Listar productos (filtro kits_only)
+POST  /api/v1/auth/login           — Autenticacion, retorna JWT tokens
+POST  /api/v1/auth/refresh         — Renovar tokens
+GET   /api/v1/auth/me              — Perfil del usuario autenticado
+POST  /api/v1/users                — Crear usuario admin/staff
+GET   /api/v1/users                — Listar usuarios (paginacion)
+GET   /api/v1/users/roles          — Listar roles disponibles (para dropdowns)
+GET   /api/v1/users/{id}           — Detalle de usuario
+PATCH /api/v1/users/{id}           — Actualizar usuario (nombre, email, rol, estado)
+POST  /api/v1/affiliates/enroll    — Inscribir nuevo distribuidor + orden de kit
+GET   /api/v1/affiliates           — Listar distribuidores (filtro por status)
+GET   /api/v1/affiliates/{id}      — Detalle de distribuidor
+GET   /api/v1/affiliates/{id}/tree — Arbol binario desde un nodo (depth configurable)
+GET   /api/v1/products             — Listar productos (filtro kits_only)
 GET   /api/v1/orders/{id}              — Detalle de orden con items
 PATCH /api/v1/orders/{id}/confirm-payment — Confirmar pago, acreditar BV/PV, activar distribuidor
-GET  /api/v1/affiliates/{id}/tree        — Arbol binario desde un nodo (depth configurable)
 GET   /health                            — Health check
 ```
 
@@ -437,6 +442,29 @@ back_office_portal/src/
 - **Dominios planificados (pendiente DNS):**
   - `ganoherb.com.sv` → WordPress (sitio principal, futuro).
   - `backoffice.ganoherb.com.sv` → SPA + API.
+
+### 2026-02-23 — CRUD de Usuarios + created_by + Color Ganoherb
+
+- **CRUD de Usuarios implementado** — 4 endpoints nuevos:
+  - `POST /api/v1/users` — Crear usuario admin/staff (permiso `users:create`). Hashea password, asigna roles, valida email unico, bloquea asignacion de super_admin.
+  - `GET /api/v1/users` — Listar usuarios con paginacion (permiso `users:read`).
+  - `GET /api/v1/users/{id}` — Detalle de usuario (permiso `users:read`).
+  - `PATCH /api/v1/users/{id}` — Actualizar nombre, email, is_active, rol (permiso `users:update`). Protege superadmins.
+- **Schemas nuevos:** `UpdateUserRequest`, `UserListResponse` en `app/schemas/auth.py`. Se reutilizo `UserCreate` existente para el POST.
+- **`created_by_user_id` agregado a Affiliate:**
+  - Nueva columna `created_by_user_id` (UUID FK a users, nullable) en modelo `Affiliate`.
+  - Enrollment service (`services/enrollment.py`) ahora pasa `created_by_user_id` al crear el affiliate.
+  - Campo expuesto en `AffiliateResponse` schema.
+  - Migracion Alembic: `a3f1c8d92e01_add_created_by_user_id_to_affiliates.py`.
+- **`GET /users/roles`** — endpoint adicional para obtener roles disponibles (usado en dropdowns del frontend).
+- **Frontend — Pantallas de gestion de usuarios:**
+  - `/users` — tabla con lista de usuarios (nombre, email, rol, estado, fecha), botones editar y activar/desactivar.
+  - `/users/new` — formulario para crear usuario (nombre, apellido, email, contraseña, selector de rol).
+  - `/users/:userId/edit` — formulario pre-llenado para editar datos, cambiar rol, activar/desactivar.
+  - Card "Gestion de Usuarios" en el dashboard **solo visible para superadmins** (`user.is_superadmin`).
+  - Archivos nuevos: `types/user.ts`, `api/users.ts`, `pages/users/users-page.tsx`, `pages/users/create-user-page.tsx`, `pages/users/edit-user-page.tsx`.
+- **Color primario del frontend cambiado** de teal (`oklch(0.432 0.1 155)`) a rojo coral Ganoherb `#e9514b` (`oklch(0.588 0.18 25)`). Destructive diferenciado a rojo oscuro (`oklch(0.45 0.22 30)`).
+- Router registrado en `app/api/v1/router.py`.
 
 ### Despues del entregable (Fase 1 continua)
 - Sub-fase 1.3: Colocacion en arbol binario (derrame/spillover automatico).
