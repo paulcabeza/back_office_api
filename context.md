@@ -7,6 +7,12 @@
 
 - **No agregar co-autor de Claude en los commits.** Los commits son del desarrollador unicamente.
 
+## Convenciones de Documentacion
+
+- **Todo el contexto tecnico y progreso debe quedar en archivos versionados en Git** (`context.md`, `schema.md`, `flujos.md`, `modulos.md`, `plan.md`), no en memorias locales de herramientas. El equipo trabaja desde multiples maquinas y las memorias locales no se sincronizan.
+- `context.md` es la fuente de verdad para decisiones tecnicas, infraestructura, known issues y bitacora de avances.
+- Al finalizar una sesion de trabajo, **siempre actualizar context.md** con los cambios realizados.
+
 ## Estructura del Proyecto
 
 - `back_office_api/` — Backend (FastAPI + Python) — **repo privado**
@@ -67,8 +73,11 @@
 - **passlib + bcrypt:** passlib 1.7.4 es incompatible con bcrypt>=4.1. Se fijo `bcrypt==4.0.1` en requirements.txt.
 - **user_roles con 2 FKs a users:** La tabla `user_roles` tiene `user_id` y `assigned_by` (ambos FK a users). Las relaciones en SQLAlchemy requieren `primaryjoin`/`secondaryjoin` explicitos.
 - **Lazy load en async:** Cuando se crean objetos en memoria (no via query), las relaciones lazy no se cargan automaticamente. Usar `await db.refresh(obj, ["relationship"])` antes de serializar con Pydantic.
-- **Git:** Identidad configurada per-repo (no global). SSH auth con ed25519. Remote: `git@github.com:paulcabeza/back_office_api.git`.
+- **Git:** Identidad configurada per-repo (no global). SSH auth con ed25519. Remote: `git@github.com:paulcabeza/back_office_api.git`. Frontend remote: `https://github.com/paulcabeza/back_office_portal.git`.
 - **venv:** En `.venv/` dentro de `back_office_api/`. Python 3.12.
+- **Shell `!` en bash:** Causa problemas de escaping — usar scripts Python para testing en vez de curl con passwords.
+- **`npm create vite@latest .`:** Falla si el directorio no esta vacio — usar temp dir y copiar archivos.
+- **Frontend client.ts:** URL base usa `import.meta.env.VITE_API_BASE_URL || "/api/v1"`. En dev local usar `.env` con `VITE_API_BASE_URL=http://localhost:8000/api/v1`.
 
 ### Multi-Tenant (Fase Futura)
 

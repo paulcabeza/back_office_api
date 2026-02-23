@@ -6,6 +6,12 @@
 - Hablar en espanol salvo que el usuario cambie de idioma.
 - Codigo y nombres de variables/funciones siempre en ingles.
 
+## Documentacion
+
+- **Todo el contexto, decisiones e historial de progreso debe quedar en archivos versionados en Git**, no en memorias locales de herramientas. El equipo trabaja desde multiples maquinas.
+- **Al finalizar cada sesion**, actualizar `context.md` con los cambios realizados y comitear.
+- Fuente de verdad: `context.md` (tecnico + bitacora), `schema.md` (BD), `flujos.md` (flujos operativos), `modulos.md` (funcional), `plan.md` (negocio).
+
 ## Proyecto
 
 - **Back Office MLM Ganoherb** — sistema de gestion para empresa de venta directa (MLM binario hibrido progresivo).
