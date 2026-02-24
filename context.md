@@ -488,6 +488,8 @@ back_office_portal/src/
 - **Vista de lista de usuarios mejorada:** columna Email removida (solo se muestra Username). La lista es mas limpia: Nombre, Usuario, Rol, Estado, Creado, Acciones.
 - **Vista de edicion de usuario mejorada:** username se muestra como campo readonly con icono de User y nota "Generado automaticamente, no se puede modificar". Subtitulo muestra `@username` junto al nombre completo.
 - **Preview de username en creacion:** al escribir nombre/apellido, se genera y muestra el username estimado en tiempo real (campo readonly). Tras crear el usuario, pantalla de confirmacion muestra el username real generado por el backend.
+- **Tabla de usuarios simplificada:** columnas "Creado" y "Acciones" eliminadas. Acciones reemplazadas por menu kebab (tres puntitos verticales) con opciones "Ver detalle" y "Desactivar/Activar usuario". Click fuera cierra el menu.
+- **Header muestra username:** junto al boton "Salir" se muestra el `username` del usuario autenticado (con fallback a `full_name`).
 
 ### Despues del entregable (Fase 1 continua)
 - Sub-fase 1.3: Colocacion en arbol binario (derrame/spillover automatico).
