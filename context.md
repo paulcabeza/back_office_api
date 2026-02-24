@@ -473,6 +473,12 @@ back_office_portal/src/
   - Seed actualizado con limpieza de roles obsoletos y reasignacion de permisos del admin.
 - **Workflow del portal corregido** — se agrega `docker compose restart nginx` despues del SCP para evitar 403 por cache de volumen.
 - **Seed ejecutado en produccion** — roles limpiados, migracion aplicada via CI/CD.
+- **Proteccion de auto-desactivacion** — endpoint PATCH /users/{id} impide que un usuario se desactive a si mismo.
+- **`GET /affiliates/me`** — nuevo endpoint que retorna el perfil de distribuidor del usuario autenticado (busca por `user_id`). No requiere permiso especifico, solo autenticacion.
+- **Dashboard inteligente por rol:**
+  - Distribuidores ven su dashboard con: codigo, estado, PV periodo, BV izq/der, rango, info personal.
+  - Admins/superadmins ven el menu administrativo (inscripcion, gestion usuarios, etc.).
+  - Componente `SmartDashboard` en App.tsx decide segun roles del usuario.
 
 ### Despues del entregable (Fase 1 continua)
 - Sub-fase 1.3: Colocacion en arbol binario (derrame/spillover automatico).

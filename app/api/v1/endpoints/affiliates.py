@@ -5,7 +5,9 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.deps import require_permission
+from fastapi import HTTPException, status as http_status
+
+from app.core.deps import get_current_user, require_permission
 from app.db.session import get_db
 from app.models.affiliate import Affiliate
 from app.models.user import User
@@ -79,6 +81,27 @@ async def enroll(
     )
 
 
+@router.get("/me", response_model=AffiliateResponse)
+async def get_my_affiliate(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Get the affiliate profile linked to the current user."""
+    result = await db.execute(
+        select(Affiliate).where(
+            Affiliate.user_id == current_user.id,
+            Affiliate.deleted_at.is_(None),
+        )
+    )
+    affiliate = result.scalar_one_or_none()
+    if affiliate is None:
+        raise HTTPException(
+            status_code=http_status.HTTP_404_NOT_FOUND,
+            detail="No affiliate profile linked to this user",
+        )
+    return AffiliateResponse.model_validate(affiliate)
+
+
 @router.get("", response_model=list[AffiliateListResponse])
 async def list_affiliates(
     current_user: User = Depends(require_permission("affiliates:read")),
@@ -113,7 +136,6 @@ async def get_affiliate(
     )
     affiliate = result.scalar_one_or_none()
     if affiliate is None:
-        from fastapi import HTTPException, status as http_status
         raise HTTPException(status_code=http_status.HTTP_404_NOT_FOUND, detail="Affiliate not found")
     return AffiliateResponse.model_validate(affiliate)
 
@@ -126,8 +148,6 @@ async def get_affiliate_tree(
     depth: int = Query(default=3, ge=1, le=10, description="Tree depth levels"),
 ):
     """Get the binary tree starting from an affiliate, up to `depth` levels."""
-    from fastapi import HTTPException, status as http_status
-
     tree = await get_binary_tree(db, affiliate_id, depth)
     if tree is None:
         raise HTTPException(
