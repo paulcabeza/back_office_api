@@ -149,6 +149,13 @@ async def update_user(
             detail="Cannot modify a superadmin user",
         )
 
+    # Prevent user from deactivating themselves
+    if body.is_active is False and user.id == current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No puedes desactivar tu propia cuenta",
+        )
+
     # Update scalar fields
     if body.email is not None:
         # Check uniqueness
