@@ -485,6 +485,9 @@ back_office_portal/src/
   - Acentos removidos via `unicodedata.normalize("NFKD")`.
   - Login acepta username o email (`LoginRequest.email` ahora es `str`, no `EmailStr`). Busca con `OR(email, username)`.
   - Frontend: login muestra "Usuario o correo electronico", tabla de usuarios muestra columna "Usuario".
+- **Vista de lista de usuarios mejorada:** columna Email removida (solo se muestra Username). La lista es mas limpia: Nombre, Usuario, Rol, Estado, Creado, Acciones.
+- **Vista de edicion de usuario mejorada:** username se muestra como campo readonly con icono de User y nota "Generado automaticamente, no se puede modificar". Subtitulo muestra `@username` junto al nombre completo.
+- **Preview de username en creacion:** al escribir nombre/apellido, se genera y muestra el username estimado en tiempo real (campo readonly). Tras crear el usuario, pantalla de confirmacion muestra el username real generado por el backend.
 
 ### Despues del entregable (Fase 1 continua)
 - Sub-fase 1.3: Colocacion en arbol binario (derrame/spillover automatico).
