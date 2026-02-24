@@ -13,8 +13,10 @@ class User(BaseModel):
     __tablename__ = "users"
     __table_args__ = (
         UniqueConstraint("tenant_id", "email", name="uq_users_tenant_email"),
+        UniqueConstraint("tenant_id", "username", name="uq_users_tenant_username"),
     )
 
+    username: Mapped[str | None] = mapped_column(String(50), nullable=True, index=True)
     email: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     first_name: Mapped[str] = mapped_column(String(100), nullable=False)

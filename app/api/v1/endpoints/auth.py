@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.deps import get_current_user
@@ -28,8 +28,13 @@ MAX_FAILED_ATTEMPTS = 5
 
 @router.post("/login", response_model=TokenResponse)
 async def login(body: LoginRequest, db: AsyncSession = Depends(get_db)):
-    """Authenticate user with email + password, return JWT tokens."""
-    result = await db.execute(select(User).where(User.email == body.email))
+    """Authenticate user with email/username + password, return JWT tokens."""
+    identifier = body.email.strip().lower()
+    result = await db.execute(
+        select(User).where(
+            or_(User.email == identifier, User.username == identifier)
+        )
+    )
     user = result.scalar_one_or_none()
 
     if user is None:

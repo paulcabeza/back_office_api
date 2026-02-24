@@ -7,7 +7,7 @@ from pydantic import BaseModel, EmailStr, Field
 # --- Auth ---
 
 class LoginRequest(BaseModel):
-    email: EmailStr
+    email: str = Field(min_length=1)  # Accepts email or username
     password: str = Field(min_length=8)
 
 
@@ -33,6 +33,7 @@ class UserCreate(BaseModel):
 
 class UserResponse(BaseModel):
     id: uuid.UUID
+    username: str | None
     email: str
     first_name: str
     last_name: str
@@ -55,6 +56,7 @@ class UpdateUserRequest(BaseModel):
 
 class UserListResponse(BaseModel):
     id: uuid.UUID
+    username: str | None
     email: str
     full_name: str
     is_active: bool

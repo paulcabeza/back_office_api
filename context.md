@@ -479,6 +479,12 @@ back_office_portal/src/
   - Distribuidores ven su dashboard con: codigo, estado, PV periodo, BV izq/der, rango, info personal.
   - Admins/superadmins ven el menu administrativo (inscripcion, gestion usuarios, etc.).
   - Componente `SmartDashboard` en App.tsx decide segun roles del usuario.
+- **Username auto-generado al crear usuarios:**
+  - Campo `username` (String(50), unique, nullable) agregado al modelo User. Migracion `b7e2d4f10a83`.
+  - Logica: primera letra del primer nombre + primer apellido (ej: "Rosa Cabrera Romero" → `rcabrera`). Si existe, agrega inicial del segundo apellido (`rcabrerar`). Si aun existe, sufijo numerico (`rcabrera1`).
+  - Acentos removidos via `unicodedata.normalize("NFKD")`.
+  - Login acepta username o email (`LoginRequest.email` ahora es `str`, no `EmailStr`). Busca con `OR(email, username)`.
+  - Frontend: login muestra "Usuario o correo electronico", tabla de usuarios muestra columna "Usuario".
 
 ### Despues del entregable (Fase 1 continua)
 - Sub-fase 1.3: Colocacion en arbol binario (derrame/spillover automatico).
