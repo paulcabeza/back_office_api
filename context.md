@@ -160,7 +160,7 @@ Tenant (futuro)
 
 ---
 
-## Entregable Actual (En Progreso)
+## Entregable Actual (Completado)
 
 > **Objetivo:** Un usuario con permisos (ej: gerente de ventas) puede iniciar sesion en el portal, ver los kits disponibles, inscribir un nuevo distribuidor seleccionando un paquete (ESP1=$195, ESP2=$495, ESP3=$995), y ver la confirmacion con el codigo generado (GH-SV-XXXXXX) y puntos asignados.
 
@@ -171,12 +171,29 @@ Tenant (futuro)
 - [x] API: Inscripcion de distribuidor (affiliate + orden + codigo + PV/BV)
 - [x] API: Listado y detalle de distribuidores
 - [x] API: Detalle de ordenes
-- [ ] Frontend: Login del usuario administrativo
-- [ ] Frontend: Vista de kits disponibles
-- [ ] Frontend: Formulario de inscripcion de distribuidor
-- [ ] Frontend: Confirmacion con codigo y datos del nuevo distribuidor
+- [x] Frontend: Login del usuario administrativo
+- [x] Frontend: Vista de kits disponibles
+- [x] Frontend: Formulario de inscripcion de distribuidor
+- [x] Frontend: Confirmacion con codigo y datos del nuevo distribuidor
 
-**Fuera de alcance para este entregable:** Arbol binario (colocacion/spillover), bonos, comisiones, billetera, genealogia.
+**Funcionalidad adicional completada (fuera del alcance original):**
+- [x] API: CRUD de usuarios admin/staff (crear, listar, detalle, actualizar)
+- [x] API: Endpoint de confirmacion de pago (acredita BV/PV, activa distribuidor)
+- [x] API: Arbol binario (`GET /affiliates/{id}/tree` con profundidad configurable)
+- [x] API: Endpoint `GET /affiliates/me` (perfil del distribuidor autenticado)
+- [x] API: Username auto-generado al crear usuarios
+- [x] API: Login acepta username o email
+- [x] API: Notificaciones por email (SendGrid — bienvenida + notificacion admin)
+- [x] Frontend: Dashboard inteligente por rol (admin vs distribuidor)
+- [x] Frontend: Dashboard del distribuidor (codigo, estado, PV, BV, rango, datos personales)
+- [x] Frontend: CRUD de usuarios (listar, crear con preview de username, editar, activar/desactivar)
+- [x] Frontend: Refresh token automatico con cola de retry en 401
+- [x] Frontend: Rutas protegidas con ProtectedRoute
+- [x] Frontend: UI condicional por rol (gestion de usuarios solo para superadmins)
+- [x] Deploy: CI/CD con GitHub Actions (backend a GHCR/Linode, frontend SCP a Linode)
+- [x] Deploy: Servidor Linode Nanode 1GB operativo con Nginx + Docker
+
+**Fuera de alcance para este entregable:** Colocacion automatica en arbol binario (spillover), bonos, comisiones, billetera, genealogia visual interactiva.
 
 ---
 

@@ -21,13 +21,14 @@
 
 ## 1. User
 
-Usuarios internos del sistema (administradores, gerentes, soporte). **No** incluye afiliados/distribuidores — esos van en `affiliate`.
+Usuarios internos del sistema (administradores, staff). Tambien se crea un User para cada distribuidor al inscribirlo (rol `distributor`).
 
 ```
 TABLE users
 ---------------------------------------------------------------
 id                  UUID        PK DEFAULT gen_random_uuid()
 tenant_id           UUID        NULL FK -> tenants(id)
+username            VARCHAR(50) NULL             -- auto-generado: 1ra inicial + 1er apellido (ej: rcabrera)
 email               VARCHAR(255) NOT NULL
 password_hash       VARCHAR(255) NOT NULL
 first_name          VARCHAR(100) NOT NULL
@@ -43,14 +44,17 @@ created_at          TIMESTAMPTZ NOT NULL DEFAULT now()
 updated_at          TIMESTAMPTZ NOT NULL DEFAULT now()
 ---------------------------------------------------------------
 UNIQUE (tenant_id, email)   -- un email unico por tenant (o global si tenant_id IS NULL)
+UNIQUE (tenant_id, username) -- un username unico por tenant
 INDEX idx_users_email ON users(email)
 INDEX idx_users_tenant ON users(tenant_id) WHERE tenant_id IS NOT NULL
 ```
 
 **Decisiones:**
 - `is_superadmin` para el super admin global (bypassea tenant). Solo 1-2 usuarios.
-- Bloqueo de cuenta: `failed_login_count` >= threshold configurable -> `locked_until` se setea.
-- 2FA: `totp_secret` almacenado encriptado (AES-256-GCM via app-level encryption). Obligatorio para admins, opcional para otros.
+- `username` auto-generado al crear usuario: primera inicial + primer apellido, sin acentos, lowercase (ej: "Rosa Cabrera" → `rcabrera`). Si existe, agrega inicial del segundo apellido o sufijo numerico.
+- Login acepta `username` o `email` (busca con OR).
+- Bloqueo de cuenta: `failed_login_count` >= 5 fallos → `locked_until` se setea por 30 minutos. Reset en login exitoso.
+- 2FA: `totp_secret` almacenado encriptado (AES-256-GCM via app-level encryption). Campos existentes, logica pendiente de implementar.
 
 ---
 
@@ -126,14 +130,15 @@ PK (user_id, role_id)
 
 ## 6. Affiliate
 
-Distribuidores/IBOs de la red MLM. Relacion 1:1 opcional con `users` (un admin puede no tener affiliate; un affiliate puede no tener user login en fase 1).
+Distribuidores/IBOs de la red MLM. Relacion 1:1 con `users` — al inscribir un distribuidor se crea automaticamente su User con rol `distributor`.
 
 ```
 TABLE affiliates
 ---------------------------------------------------------------
 id                  UUID        PK DEFAULT gen_random_uuid()
 tenant_id           UUID        NULL FK -> tenants(id)
-user_id             UUID        NULL FK -> users(id) UNIQUE  -- 1:1 opcional
+user_id             UUID        NULL FK -> users(id) UNIQUE  -- 1:1 (se crea User al inscribir)
+created_by_user_id  UUID        NULL FK -> users(id)         -- admin que inscribio al distribuidor
 affiliate_code      VARCHAR(20) NOT NULL UNIQUE              -- 'GH-SV-000001'
 country_code        VARCHAR(2)  NOT NULL DEFAULT 'SV'        -- ISO 3166-1 alpha-2
 
@@ -200,7 +205,8 @@ INDEX idx_affiliates_code ON affiliates(affiliate_code)
   ```
 - **Acumuladores BV**: denormalizados en la tabla para lectura rapida. Se actualizan transaccionalmente al confirmar pago de orden. El calculo de comisiones lee estos valores.
 - **Arbol binario**: modelado con adjacency list (`placement_parent_id` + `placement_side`). Suficiente para Fase 1. Si el rendimiento lo requiere, se puede agregar materialized path o closure table despues.
-- **`user_id` nullable**: en fase 1, los affiliates se crean desde el back office por un admin. El affiliate puede no tener login propio aun.
+- **`user_id`**: al inscribir un distribuidor, el servicio de enrollment crea automaticamente un User con rol `distributor` y lo vincula via `user_id`. El campo es nullable en BD por flexibilidad, pero en la practica siempre se crea.
+- **`created_by_user_id`**: registra que admin realizo la inscripcion.
 - **Rank values**: `'affiliate'`, `'bronze'`, `'silver'`, `'gold'`, `'platinum'`, `'diamond'`, `'double_diamond'`, `'crown'`, `'royal_crown'`, `'ambassador'`.
 - **Soft delete**: `deleted_at` porque un affiliate cancelado mantiene su posicion en el arbol (Regla #8).
 - **Documentos de identidad**: ambos pares (`id_doc_*` y `tax_id_*`) son nullable en BD, pero a nivel de servicio se valida que **al menos uno** sea proporcionado al crear/activar un afiliado. Esto permite flexibilidad (ej: un afiliado puede iniciar solo con DUI y agregar NIT despues), sin perder la garantia de tener al menos un documento de identificacion.
@@ -446,15 +452,15 @@ CREATE SEQUENCE order_seq START 1 INCREMENT 1;
 
 ## Seed Data Inicial
 
-### Roles del sistema
+### Roles del sistema (simplificados a 3)
 
-| name | display_name | is_system |
-|------|-------------|-----------|
-| super_admin | Super Administrador | true |
-| admin | Administrador | true |
-| sales_manager | Gerente de Ventas | true |
-| operations_manager | Gerente de Operaciones | true |
-| support | Soporte | true |
+| name | display_name | is_system | Permisos |
+|------|-------------|-----------|----------|
+| super_admin | Super Administrador | true | Todos (acceso total, unico con `users:*`) |
+| admin | Administrador | true | Operativo: affiliates, orders, products, audit. NO users. |
+| distributor | Distribuidor | true | Solo lectura: `affiliates:read`, `orders:read`, `products:read` |
+
+> **Nota:** Los roles `sales_manager`, `operations_manager` y `support` fueron eliminados por innecesarios en MVP. El seed limpia roles obsoletos.
 
 ### Permisos base (Fase 1)
 
