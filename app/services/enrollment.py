@@ -11,6 +11,7 @@ from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import hash_password
+from app.services.username import generate_username
 from app.models.affiliate import Affiliate
 from app.models.associations import user_roles
 from app.models.audit_log import AuditLog
@@ -157,7 +158,9 @@ async def enroll_affiliate(
     order_number = await generate_order_number(db)
 
     # 6. Create user account for the distributor
+    username = await generate_username(db, request.first_name, request.last_name)
     user = User(
+        username=username,
         email=request.email,
         password_hash=hash_password(request.password),
         first_name=request.first_name,
