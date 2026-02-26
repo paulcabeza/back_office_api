@@ -51,7 +51,12 @@ class EnrollmentRequest(BaseModel):
 
     @model_validator(mode="after")
     def validate_placement(self):
-        if self.placement_parent_id and not self.placement_side:
+        if self.sponsor_id:
+            if not self.placement_parent_id:
+                raise ValueError("placement_parent_id is required when sponsor_id is provided")
+            if not self.placement_side:
+                raise ValueError("placement_side is required when sponsor_id is provided")
+        elif self.placement_parent_id and not self.placement_side:
             raise ValueError("placement_side is required when placement_parent_id is provided")
         return self
 

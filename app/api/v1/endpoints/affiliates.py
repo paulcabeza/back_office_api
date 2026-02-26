@@ -2,7 +2,7 @@ import logging
 import uuid
 
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from fastapi import HTTPException, status as http_status
@@ -14,6 +14,7 @@ from app.models.user import User
 from app.schemas.affiliate import AffiliateListResponse, AffiliateResponse, EnrollmentRequest, TreeNodeResponse
 from app.schemas.order import EnrollmentResponse, OrderResponse
 from app.services.email import send_enrollment_notification_admin, send_welcome_distributor
+from app.models.audit_log import AuditLog
 from app.services.enrollment import enroll_affiliate
 from app.services.tree import get_binary_tree
 
@@ -155,3 +156,46 @@ async def get_affiliate_tree(
             detail="Affiliate not found",
         )
     return tree
+
+
+@router.delete("/{affiliate_id}", status_code=204)
+async def delete_affiliate(
+    affiliate_id: uuid.UUID,
+    current_user: User = Depends(require_permission("affiliates:delete")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Soft-delete an affiliate (sets deleted_at timestamp)."""
+    if not current_user.is_superadmin:
+        raise HTTPException(
+            status_code=http_status.HTTP_403_FORBIDDEN,
+            detail="Only superadmin can delete affiliates",
+        )
+
+    result = await db.execute(
+        select(Affiliate).where(
+            Affiliate.id == affiliate_id,
+            Affiliate.deleted_at.is_(None),
+        )
+    )
+    affiliate = result.scalar_one_or_none()
+    if affiliate is None:
+        raise HTTPException(
+            status_code=http_status.HTTP_404_NOT_FOUND,
+            detail="Affiliate not found",
+        )
+
+    affiliate.deleted_at = func.now()
+
+    audit = AuditLog(
+        tenant_id=affiliate.tenant_id,
+        user_id=current_user.id,
+        action="affiliate.delete",
+        resource_type="affiliate",
+        resource_id=affiliate.id,
+        new_values={
+            "affiliate_code": affiliate.affiliate_code,
+            "email": affiliate.email,
+        },
+    )
+    db.add(audit)
+    await db.flush()

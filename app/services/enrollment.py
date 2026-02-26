@@ -74,6 +74,16 @@ async def enroll_affiliate(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Sponsor not found",
             )
+    else:
+        # Sponsor is required if there are already affiliates in the system
+        result = await db.execute(
+            select(Affiliate.id).where(Affiliate.deleted_at.is_(None)).limit(1)
+        )
+        if result.scalar_one_or_none() is not None:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Sponsor is required",
+            )
 
     # 2. Validate placement position is available (if provided)
     if request.placement_parent_id:
