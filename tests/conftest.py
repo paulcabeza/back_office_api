@@ -22,7 +22,13 @@ from app.main import app as fastapi_app
 
 # ── Helpers ──────────────────────────────────────────────────────────────
 
-def make_fake_user(*, is_superadmin: bool = False, permissions: set[str] | None = None):
+def make_fake_user(
+    *,
+    is_superadmin: bool = False,
+    permissions: set[str] | None = None,
+    must_change_password: bool = False,
+    password_hash: str = "hashed_password",
+):
     """Return a MagicMock that quacks like a User model instance."""
     user = MagicMock()
     user.id = uuid.uuid4()
@@ -30,6 +36,8 @@ def make_fake_user(*, is_superadmin: bool = False, permissions: set[str] | None 
     user.full_name = "Test User"
     user.is_active = True
     user.is_superadmin = is_superadmin
+    user.must_change_password = must_change_password
+    user.password_hash = password_hash
 
     _perms = permissions or set()
     user.has_permission = lambda codename: is_superadmin or codename in _perms

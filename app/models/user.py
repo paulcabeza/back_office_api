@@ -32,6 +32,7 @@ class User(BaseModel):
     )
     totp_secret: Mapped[str | None] = mapped_column(String(255), nullable=True)
     totp_enabled: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    must_change_password: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
     # Relationships — explicit joins because user_roles has 2 FKs to users (user_id + assigned_by)
     roles: Mapped[list["Role"]] = relationship(

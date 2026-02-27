@@ -193,7 +193,7 @@ Tenant (futuro)
 - [x] Frontend: UI condicional por rol (gestion de usuarios solo para superadmins)
 - [x] Deploy: CI/CD con GitHub Actions (backend a GHCR/Linode, frontend SCP a Linode)
 - [x] Deploy: Servidor Linode Nanode 1GB operativo con Nginx + Docker
-- [x] Testing: Suite pytest (13 tests) + CI job que bloquea deploy si fallan
+- [x] Testing: Suite pytest (19 tests) + CI job que bloquea deploy si fallan
 
 **Fuera de alcance para este entregable:** Colocacion automatica en arbol binario (spillover), bonos, comisiones, billetera, genealogia visual interactiva.
 
@@ -306,9 +306,10 @@ Tenant (futuro)
 
 ### Endpoints disponibles (Fase 1 actual)
 ```
-POST  /api/v1/auth/login           — Autenticacion, retorna JWT tokens
+POST  /api/v1/auth/login           — Autenticacion, retorna JWT tokens + must_change_password
 POST  /api/v1/auth/refresh         — Renovar tokens
 GET   /api/v1/auth/me              — Perfil del usuario autenticado
+POST  /api/v1/auth/change-password — Cambiar contraseña (204, requiere auth)
 POST  /api/v1/users                — Crear usuario admin/staff
 GET   /api/v1/users                — Listar usuarios (paginacion)
 GET   /api/v1/users/roles          — Listar roles disponibles (para dropdowns)
@@ -340,14 +341,14 @@ GET   /health                            — Health check
 **Estructura de carpetas:**
 ```
 back_office_portal/src/
-  main.tsx, App.tsx, index.css
+  main.tsx, App.tsx, index.css, config.ts
   api/
     client.ts           — Axios instance + interceptors (auth, refresh, 401 retry queue)
-    auth.ts             — login(), refreshToken(), getMe()
+    auth.ts             — login(), refreshToken(), getMe(), changePassword()
     products.ts         — getKits()
     affiliates.ts       — enrollAffiliate()
   stores/
-    auth-store.ts       — Zustand: tokens, user, isAuthenticated, login/logout, initialize
+    auth-store.ts       — Zustand: tokens, user, isAuthenticated, mustChangePassword, login/logout, initialize
   types/
     auth.ts             — LoginRequest, TokenResponse, User, Role
     product.ts          — Product
@@ -365,6 +366,7 @@ back_office_portal/src/
       loading-spinner.tsx
   pages/
     login/login-page.tsx
+    auth/change-password-page.tsx
     enrollment/
       kit-selection-page.tsx
       enrollment-form-page.tsx
@@ -375,6 +377,7 @@ back_office_portal/src/
 | Path | Componente | Auth |
 |------|-----------|------|
 | `/login` | LoginPage | No |
+| `/change-password` | ChangePasswordPage | Si (sin layout) |
 | `/enrollment/kits` | KitSelectionPage | Si |
 | `/enrollment/form` | EnrollmentFormPage | Si |
 | `/enrollment/confirmation` | ConfirmationPage | Si |
@@ -524,6 +527,28 @@ back_office_portal/src/
   - Job `build-and-deploy` ahora tiene `needs: test` — no despliega si fallan tests.
   - Env vars dummy en el job para que `Settings()` no falle en CI.
 - **Bug fix:** `app/api/v1/endpoints/users.py` — faltaba `router = APIRouter(prefix="/users", tags=["users"])`.
+
+### 2026-02-26 — Cambio de contraseña obligatorio + Version en login + Tests
+- **Cambio de contraseña obligatorio en primer login:**
+  - Nuevo campo `must_change_password` (BOOLEAN, default `true`) en modelo `User`.
+  - Migracion Alembic `c9f3a5e71b24`: agrega columna, usuarios existentes quedan con `false`.
+  - Nuevo endpoint `POST /api/v1/auth/change-password` (204): verifica contraseña actual, hashea nueva, pone `must_change_password = false`.
+  - Login retorna `must_change_password` en `TokenResponse`. `GET /auth/me` lo retorna en `UserResponse`.
+  - Schemas nuevos: `ChangePasswordRequest` en `app/schemas/auth.py`.
+- **Frontend — Cambio de contraseña:**
+  - Nuevo estado `mustChangePassword` en auth store (Zustand).
+  - Nueva pagina `ChangePasswordPage` (card centrada: actual + nueva + confirmar).
+  - `ProtectedRoute` redirige a `/change-password` si `mustChangePassword` es true.
+  - Login page redirige a `/change-password` o `/` segun el flag.
+  - Ruta `/change-password` dentro de ProtectedRoute, fuera de AppLayout.
+- **Version v0.1 en login:**
+  - `APP_VERSION` en backend cambiado de `"0.1.0"` a `"0.1"`.
+  - Nuevo archivo `src/config.ts` en frontend con `APP_VERSION = "0.1"`.
+  - Login page muestra `v0.1` debajo del subtitulo.
+- **Tests (6 nuevos, 19 total):**
+  - `tests/test_change_password.py` (4 tests): cambio exitoso, contraseña incorrecta, contraseña corta, flag se limpia.
+  - `tests/test_schemas.py` (2 tests adicionales): validacion de `ChangePasswordRequest`.
+  - `conftest.py` actualizado: `make_fake_user` con params `must_change_password` y `password_hash`.
 
 ### Despues del entregable (Fase 1 continua)
 - Sub-fase 1.3: Colocacion en arbol binario (derrame/spillover automatico).

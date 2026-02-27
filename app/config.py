@@ -4,7 +4,7 @@ from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
     # Application
     APP_NAME: str = "Ganoherb Back Office API"
-    APP_VERSION: str = "0.1.0"
+    APP_VERSION: str = "0.1"
     ENVIRONMENT: str = "development"
     DEBUG: bool = True
 

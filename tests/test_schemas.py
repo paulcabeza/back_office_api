@@ -6,6 +6,7 @@ import pytest
 from pydantic import ValidationError
 
 from app.schemas.affiliate import EnrollmentRequest
+from app.schemas.auth import ChangePasswordRequest
 
 # ── Helpers ──────────────────────────────────────────────────────────────
 
@@ -58,3 +59,18 @@ def test_only_tax_id_is_valid():
     """Having only tax ID (no identity doc) should be valid."""
     aff = enrollment(id_doc_type=None, id_doc_number=None)
     assert aff.tax_id_number == "0614-010190-101-0"
+
+
+# ── ChangePasswordRequest ───────────────────────────────────────────────
+
+def test_change_password_valid():
+    """Valid change password request."""
+    req = ChangePasswordRequest(current_password="OldPass123", new_password="NewPass123")
+    assert req.current_password == "OldPass123"
+    assert req.new_password == "NewPass123"
+
+
+def test_change_password_short_new():
+    """new_password shorter than 8 chars must fail."""
+    with pytest.raises(ValidationError, match="String should have at least 8 characters"):
+        ChangePasswordRequest(current_password="OldPass123", new_password="short")

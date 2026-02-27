@@ -10,11 +10,13 @@ from app.core.security import (
     create_access_token,
     create_refresh_token,
     decode_token,
+    hash_password,
     verify_password,
 )
 from app.db.session import get_db
 from app.models.user import User
 from app.schemas.auth import (
+    ChangePasswordRequest,
     LoginRequest,
     RefreshRequest,
     TokenResponse,
@@ -77,6 +79,7 @@ async def login(body: LoginRequest, db: AsyncSession = Depends(get_db)):
     return TokenResponse(
         access_token=create_access_token(user.id),
         refresh_token=create_refresh_token(user.id),
+        must_change_password=user.must_change_password,
     )
 
 
@@ -110,3 +113,20 @@ async def refresh_token(body: RefreshRequest, db: AsyncSession = Depends(get_db)
 async def get_me(current_user: User = Depends(get_current_user)):
     """Return the profile of the currently authenticated user."""
     return current_user
+
+
+@router.post("/change-password", status_code=status.HTTP_204_NO_CONTENT)
+async def change_password(
+    body: ChangePasswordRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Change the current user's password."""
+    if not verify_password(body.current_password, current_user.password_hash):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Current password is incorrect",
+        )
+    current_user.password_hash = hash_password(body.new_password)
+    current_user.must_change_password = False
+    await db.flush()

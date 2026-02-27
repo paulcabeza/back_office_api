@@ -40,6 +40,7 @@ failed_login_count  INT         NOT NULL DEFAULT 0
 locked_until        TIMESTAMPTZ NULL
 totp_secret         VARCHAR(255) NULL          -- 2FA secret (encrypted)
 totp_enabled        BOOLEAN     NOT NULL DEFAULT false
+must_change_password BOOLEAN    NOT NULL DEFAULT true  -- forzar cambio en primer login
 created_at          TIMESTAMPTZ NOT NULL DEFAULT now()
 updated_at          TIMESTAMPTZ NOT NULL DEFAULT now()
 ---------------------------------------------------------------
@@ -53,6 +54,7 @@ INDEX idx_users_tenant ON users(tenant_id) WHERE tenant_id IS NOT NULL
 - `is_superadmin` para el super admin global (bypassea tenant). Solo 1-2 usuarios.
 - `username` auto-generado al crear usuario: primera inicial + primer apellido, sin acentos, lowercase (ej: "Rosa Cabrera" → `rcabrera`). Si existe, agrega inicial del segundo apellido o sufijo numerico.
 - Login acepta `username` o `email` (busca con OR).
+- `must_change_password`: flag que fuerza al usuario a cambiar su contraseña en el primer login. Se crea como `true` para usuarios nuevos; se pone en `false` al cambiar contraseña via `POST /auth/change-password`.
 - Bloqueo de cuenta: `failed_login_count` >= 5 fallos → `locked_until` se setea por 30 minutos. Reset en login exitoso.
 - 2FA: `totp_secret` almacenado encriptado (AES-256-GCM via app-level encryption). Campos existentes, logica pendiente de implementar.
 
