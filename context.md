@@ -38,6 +38,7 @@
 | **HTTP Client** | Axios |
 | **UI Components** | Shadcn/ui + Tailwind CSS |
 | **Autenticacion** | JWT (access + refresh tokens) |
+| **Testing** | pytest + pytest-asyncio + httpx (requirements-dev.txt) |
 | **Dependencias Python** | pip + venv (requirements.txt) |
 | **Almacenamiento** | AWS S3 / MinIO |
 | **Email** | SendGrid / AWS SES |
@@ -192,6 +193,7 @@ Tenant (futuro)
 - [x] Frontend: UI condicional por rol (gestion de usuarios solo para superadmins)
 - [x] Deploy: CI/CD con GitHub Actions (backend a GHCR/Linode, frontend SCP a Linode)
 - [x] Deploy: Servidor Linode Nanode 1GB operativo con Nginx + Docker
+- [x] Testing: Suite pytest (13 tests) + CI job que bloquea deploy si fallan
 
 **Fuera de alcance para este entregable:** Colocacion automatica en arbol binario (spillover), bonos, comisiones, billetera, genealogia visual interactiva.
 
@@ -507,6 +509,21 @@ back_office_portal/src/
 - **Preview de username en creacion:** al escribir nombre/apellido, se genera y muestra el username estimado en tiempo real (campo readonly). Tras crear el usuario, pantalla de confirmacion muestra el username real generado por el backend.
 - **Tabla de usuarios simplificada:** columnas "Creado" y "Acciones" eliminadas. Acciones reemplazadas por menu kebab (tres puntitos verticales) con opciones "Ver detalle" y "Desactivar/Activar usuario". Click fuera cierra el menu.
 - **Header muestra username:** junto al boton "Salir" se muestra el `username` del usuario autenticado (con fallback a `full_name`).
+
+### 2026-02-26 — Tests con pytest + CI en GitHub Actions
+- **Suite de tests creada (13 tests):**
+  - `tests/test_schemas.py` (5 tests): validación Pydantic pura — documentos obligatorios, placement/sponsor obligatorio, enrollment sin sponsor valido.
+  - `tests/test_username.py` (5 tests): `_normalize` (acentos, caracteres especiales) + `generate_username` con mock de DB (básico, colisión con segundo apellido, sufijo numérico).
+  - `tests/test_delete_affiliate.py` (3 tests): endpoint DELETE via httpx — superadmin 204, no-superadmin 403, affiliate no encontrado 404.
+- **Infraestructura de testing:**
+  - `pyproject.toml`: config pytest con `asyncio_mode = "auto"`.
+  - `tests/conftest.py`: env vars dummy (antes de imports), fixtures `make_fake_user`, `client` (httpx AsyncClient), `override_auth`, `override_db`.
+  - Dependencias ya existían en `requirements-dev.txt`: pytest, pytest-asyncio, httpx.
+- **CI en GitHub Actions:**
+  - Nuevo job `test` en `.github/workflows/deploy.yml`: checkout → setup-python 3.12 → pip install requirements-dev.txt → pytest -v.
+  - Job `build-and-deploy` ahora tiene `needs: test` — no despliega si fallan tests.
+  - Env vars dummy en el job para que `Settings()` no falle en CI.
+- **Bug fix:** `app/api/v1/endpoints/users.py` — faltaba `router = APIRouter(prefix="/users", tags=["users"])`.
 
 ### Despues del entregable (Fase 1 continua)
 - Sub-fase 1.3: Colocacion en arbol binario (derrame/spillover automatico).

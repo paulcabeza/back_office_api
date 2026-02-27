@@ -19,6 +19,8 @@ from app.schemas.auth import (
 )
 from app.services.username import generate_username
 
+router = APIRouter(prefix="/users", tags=["users"])
+
 
 @router.post("", response_model=UserResponse, status_code=201)
 async def create_user(
