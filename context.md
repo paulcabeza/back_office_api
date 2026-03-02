@@ -346,14 +346,17 @@ back_office_portal/src/
     client.ts           — Axios instance + interceptors (auth, refresh, 401 retry queue)
     auth.ts             — login(), refreshToken(), getMe(), changePassword()
     products.ts         — getKits()
-    affiliates.ts       — enrollAffiliate()
+    affiliates.ts       — enrollAffiliate(), getAffiliates(), getMyAffiliate(), deleteAffiliate(), getAffiliateTree()
+    users.ts            — getUsers(), getUser(), createUser(), updateUser(), getRoles()
   stores/
     auth-store.ts       — Zustand: tokens, user, isAuthenticated, mustChangePassword, login/logout, initialize
   types/
-    auth.ts             — LoginRequest, TokenResponse, User, Role
-    product.ts          — Product
-    affiliate.ts        — EnrollmentRequest, AffiliateResponse
+    auth.ts             — LoginRequest, TokenResponse, UserResponse, RoleResponse, ChangePasswordRequest
+    product.ts          — ProductResponse
+    affiliate.ts        — EnrollmentRequest, AffiliateResponse, AffiliateListItem
     order.ts            — OrderResponse, OrderItemResponse, EnrollmentResponse
+    tree.ts             — TreeNodeResponse (recursivo: left_child, right_child)
+    user.ts             — CreateUserRequest, UpdateUserRequest, UserListItem
   lib/
     utils.ts            — cn(), formatCurrency(), formatDate()
   components/
@@ -367,21 +370,26 @@ back_office_portal/src/
   pages/
     login/login-page.tsx
     auth/change-password-page.tsx
+    dashboard/
+      dashboard-page.tsx       — Panel admin/superadmin (6 opciones de menu)
+      distributor-dashboard.tsx — Panel distribuidor (KPIs + info personal)
     enrollment/
       kit-selection-page.tsx
       enrollment-form-page.tsx
       confirmation-page.tsx
+    distributors/
+      distributors-page.tsx    — Lista de distribuidores (tabla + acciones)
+    network/
+      tree-page.tsx            — Visualizador de arbol binario (selector + profundidad)
+      tree-node.tsx            — Componente recursivo para nodo del arbol
+      empty-node.tsx           — Placeholder para posiciones vacias
+    users/
+      users-page.tsx           — Lista de administradores
+      create-user-page.tsx     — Crear usuario (auto-genera username)
+      edit-user-page.tsx       — Editar usuario
 ```
 
-**Rutas:**
-| Path | Componente | Auth |
-|------|-----------|------|
-| `/login` | LoginPage | No |
-| `/change-password` | ChangePasswordPage | Si (sin layout) |
-| `/enrollment/kits` | KitSelectionPage | Si |
-| `/enrollment/form` | EnrollmentFormPage | Si |
-| `/enrollment/confirmation` | ConfirmationPage | Si |
-| `/` | Redirect a `/enrollment/kits` | Si |
+**Rutas:** (ver tabla completa actualizada en la entrada del 2026-02-26 — Frontend: Distribuidores, Arbol Binario, Dashboard)
 
 **Pantallas:**
 1. **Login** — Card centrado, email + password, errores inline (401→credenciales, 423→bloqueado). Redirige a `/enrollment/kits`.
@@ -549,6 +557,46 @@ back_office_portal/src/
   - `tests/test_change_password.py` (4 tests): cambio exitoso, contraseña incorrecta, contraseña corta, flag se limpia.
   - `tests/test_schemas.py` (2 tests adicionales): validacion de `ChangePasswordRequest`.
   - `conftest.py` actualizado: `make_fake_user` con params `must_change_password` y `password_hash`.
+
+### 2026-02-26 — Frontend: Distribuidores, Arbol Binario, Dashboard completo
+
+> **Nota:** Estas funcionalidades se implementaron pero no quedaron documentadas en su momento. Se registran ahora para mantener la bitacora completa.
+
+- **Lista de Distribuidores (frontend):**
+  - Ruta `/distributors`, archivo `pages/distributors/distributors-page.tsx`.
+  - Tabla con: codigo, nombre, kit, rango, estado, fecha de inscripcion.
+  - Boton por fila para ver arbol binario del distribuidor.
+  - Opcion de eliminar distribuidor (solo superadmin).
+  - API: `getAffiliates(skip, limit, status?)` y `deleteAffiliate(id)` en `api/affiliates.ts`.
+- **Visualizacion de Arbol Binario (frontend):**
+  - Ruta `/network/tree/:affiliateId?`, archivos en `pages/network/`: `tree-page.tsx`, `tree-node.tsx`, `empty-node.tsx`.
+  - Tipo `TreeNodeResponse` en `types/tree.ts` (estructura recursiva con `left_child`/`right_child`).
+  - API: `getAffiliateTree(affiliateId, depth)` en `api/affiliates.ts` → `GET /affiliates/{id}/tree`.
+  - Selector de distribuidor (dropdown) cuando no hay `affiliateId` en la URL.
+  - Renderizado recursivo con conectores visuales CSS entre nodos.
+  - Cada nodo muestra: codigo, nombre, estado, rango, BV izq/der.
+  - Nodos clickeables: navegan al subarbol de ese distribuidor.
+  - Profundidad ajustable con botones (1-5 niveles).
+  - Posiciones vacias visibles (`EmptyNode`) indicando piernas disponibles.
+  - Breadcrumb para navegacion entre nodos.
+  - Accesible desde: dashboard admin ("Arbol de Red") y lista de distribuidores (boton por fila).
+- **Dashboard admin ampliado a 6 opciones:**
+  - Inscribir Distribuidor, Distribuidores, Gestion de Admins, Catalogo (deshabilitado), Confirmar Pagos (deshabilitado), Arbol de Red.
+
+**Rutas actualizadas del frontend:**
+| Path | Componente | Auth |
+|------|-----------|------|
+| `/login` | LoginPage | No |
+| `/change-password` | ChangePasswordPage | Si (sin layout) |
+| `/` | SmartDashboard (admin o distribuidor segun rol) | Si |
+| `/enrollment/kits` | KitSelectionPage | Si |
+| `/enrollment/form` | EnrollmentFormPage | Si |
+| `/enrollment/confirmation` | ConfirmationPage | Si |
+| `/distributors` | DistributorsPage | Si |
+| `/network/tree/:affiliateId?` | TreePage | Si |
+| `/users` | UsersPage | Si |
+| `/users/new` | CreateUserPage | Si |
+| `/users/:userId/edit` | EditUserPage | Si |
 
 ### Despues del entregable (Fase 1 continua)
 - Sub-fase 1.3: Colocacion en arbol binario (derrame/spillover automatico).

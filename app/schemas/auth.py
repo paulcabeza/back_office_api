@@ -44,6 +44,7 @@ class UserResponse(BaseModel):
     roles: list["RoleResponse"]
     must_change_password: bool
     created_at: datetime
+    last_login_at: datetime | None = None
 
     model_config = {"from_attributes": True}
 
@@ -69,6 +70,7 @@ class UserListResponse(BaseModel):
     is_active: bool
     roles: list["RoleResponse"]
     created_at: datetime
+    last_login_at: datetime | None = None
 
     model_config = {"from_attributes": True}
 
