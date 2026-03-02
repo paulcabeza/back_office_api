@@ -346,15 +346,16 @@ back_office_portal/src/
     client.ts           — Axios instance + interceptors (auth, refresh, 401 retry queue)
     auth.ts             — login(), refreshToken(), getMe(), changePassword()
     products.ts         — getKits()
-    affiliates.ts       — enrollAffiliate(), getAffiliates(), getMyAffiliate(), deleteAffiliate(), getAffiliateTree()
+    affiliates.ts       — enrollAffiliate(), getAffiliate(), getAffiliates(), getMyAffiliate(), deleteAffiliate(), getAffiliateTree()
     users.ts            — getUsers(), getUser(), createUser(), updateUser(), getRoles()
+    orders.ts           — getOrders(), confirmPayment()
   stores/
     auth-store.ts       — Zustand: tokens, user, isAuthenticated, mustChangePassword, login/logout, initialize
   types/
     auth.ts             — LoginRequest, TokenResponse, UserResponse, RoleResponse, ChangePasswordRequest
     product.ts          — ProductResponse
     affiliate.ts        — EnrollmentRequest, AffiliateResponse, AffiliateListItem
-    order.ts            — OrderResponse, OrderItemResponse, EnrollmentResponse
+    order.ts            — OrderResponse, OrderItemResponse, OrderListItem, ConfirmPaymentRequest, EnrollmentResponse
     tree.ts             — TreeNodeResponse (recursivo: left_child, right_child)
     user.ts             — CreateUserRequest, UpdateUserRequest, UserListItem
   lib/
@@ -378,7 +379,10 @@ back_office_portal/src/
       enrollment-form-page.tsx
       confirmation-page.tsx
     distributors/
-      distributors-page.tsx    — Lista de distribuidores (tabla + acciones)
+      distributors-page.tsx        — Lista de distribuidores (tabla + acciones + menu)
+      distributor-detail-page.tsx   — Detalle de distribuidor (info, inscripcion, volumenes)
+    payments/
+      payments-page.tsx            — Confirmar pagos de ordenes pendientes
     network/
       tree-page.tsx            — Visualizador de arbol binario (selector + profundidad)
       tree-node.tsx            — Componente recursivo para nodo del arbol
@@ -389,7 +393,7 @@ back_office_portal/src/
       edit-user-page.tsx       — Editar usuario
 ```
 
-**Rutas:** (ver tabla completa actualizada en la entrada del 2026-02-26 — Frontend: Distribuidores, Arbol Binario, Dashboard)
+**Rutas:** (ver tabla completa actualizada en la entrada del 2026-03-01)
 
 **Pantallas:**
 1. **Login** — Card centrado, email + password, errores inline (401→credenciales, 423→bloqueado). Redirige a `/enrollment/kits`.
@@ -593,6 +597,56 @@ back_office_portal/src/
 | `/enrollment/form` | EnrollmentFormPage | Si |
 | `/enrollment/confirmation` | ConfirmationPage | Si |
 | `/distributors` | DistributorsPage | Si |
+| `/network/tree/:affiliateId?` | TreePage | Si |
+| `/users` | UsersPage | Si |
+| `/users/new` | CreateUserPage | Si |
+| `/users/:userId/edit` | EditUserPage | Si |
+
+### 2026-03-01 — Ultimo acceso, Detalle distribuidor, Confirmar Pagos
+
+- **Ultimo acceso en gestion de usuarios:**
+  - `last_login_at: datetime | None` agregado a `UserResponse` y `UserListResponse` en `schemas/auth.py`.
+  - Frontend: nueva columna "Ultimo acceso" en tabla de admins (`users-page.tsx`), campo readonly en detalle (`edit-user-page.tsx`).
+  - Muestra fecha formateada o "Nunca" si es null.
+  - Tipos actualizados: `UserListItem` y `UserResponse` en frontend.
+
+- **Detalle de distribuidor + "Inscrito por":**
+  - Backend: `created_by_username: str | None` agregado a `AffiliateResponse` y `AffiliateListResponse`.
+  - Endpoint `GET /affiliates/{id}` resuelve `created_by_user_id` → username (o nombre completo como fallback).
+  - Endpoint `GET /affiliates` resuelve usernames en batch (una sola query, sin N+1).
+  - Frontend: nueva pagina `pages/distributors/distributor-detail-page.tsx` con 3 secciones:
+    - Info general (nombre, correo, telefono, pais, estado, kit, rango actual, rango mas alto).
+    - Inscripcion (fecha + **inscrito por** resaltado en color primary).
+    - Volumenes (PV periodo, BV izq, BV der).
+  - Ruta: `/distributors/:affiliateId`.
+  - API: `getAffiliate(id)` en `api/affiliates.ts`.
+  - Tabla de distribuidores: columna "Red" reemplazada por "Agregado por" (muestra username).
+  - Menu de tres puntitos ahora visible para todos (no solo superadmin), con: Ver detalle, Ver arbol, Eliminar (solo superadmin).
+
+- **Pantalla de Confirmar Pagos:**
+  - Backend: nuevo `OrderListResponse` schema (ligero, con `affiliate_name` y `affiliate_code`).
+  - Nuevo endpoint `GET /orders?status=pending_payment` con paginacion y resolucion batch de nombres.
+  - Frontend: nueva pagina `pages/payments/payments-page.tsx`:
+    - Tabla de ordenes pendientes (orden, distribuidor, tipo, total, PV, BV, fecha).
+    - Boton "Confirmar" por fila abre panel inline con: metodo de pago (efectivo, transferencia, deposito, tarjeta, otro) y referencia opcional.
+    - Al confirmar: orden → `paid`, distribuidor → `active` (si inscripcion), BV/PV acreditados a toda la linea ascendente.
+    - Tabla se refresca automaticamente.
+  - API: `getOrders(status)` y `confirmPayment(orderId, data)` en `api/orders.ts`.
+  - Ruta: `/payments`.
+  - Dashboard: boton "Confirmar Pagos" habilitado, apunta a `/payments`.
+
+**Rutas actualizadas del frontend:**
+| Path | Componente | Auth |
+|------|-----------|------|
+| `/login` | LoginPage | No |
+| `/change-password` | ChangePasswordPage | Si (sin layout) |
+| `/` | SmartDashboard (admin o distribuidor segun rol) | Si |
+| `/enrollment/kits` | KitSelectionPage | Si |
+| `/enrollment/form` | EnrollmentFormPage | Si |
+| `/enrollment/confirmation` | ConfirmationPage | Si |
+| `/distributors` | DistributorsPage | Si |
+| `/distributors/:affiliateId` | DistributorDetailPage | Si |
+| `/payments` | PaymentsPage | Si |
 | `/network/tree/:affiliateId?` | TreePage | Si |
 | `/users` | UsersPage | Si |
 | `/users/new` | CreateUserPage | Si |
