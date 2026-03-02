@@ -81,6 +81,7 @@ class AffiliateResponse(BaseModel):
     bv_left_total: Decimal
     bv_right_total: Decimal
     created_by_user_id: uuid.UUID | None
+    created_by_username: str | None = None
     enrolled_at: datetime
     created_at: datetime
 

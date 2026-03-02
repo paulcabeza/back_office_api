@@ -138,7 +138,21 @@ async def get_affiliate(
     affiliate = result.scalar_one_or_none()
     if affiliate is None:
         raise HTTPException(status_code=http_status.HTTP_404_NOT_FOUND, detail="Affiliate not found")
-    return AffiliateResponse.model_validate(affiliate)
+
+    response = AffiliateResponse.model_validate(affiliate)
+
+    # Resolve the username of the admin who enrolled this affiliate
+    if affiliate.created_by_user_id:
+        creator = await db.execute(
+            select(User.username, User.first_name, User.last_name).where(
+                User.id == affiliate.created_by_user_id
+            )
+        )
+        row = creator.one_or_none()
+        if row:
+            response.created_by_username = row.username or f"{row.first_name} {row.last_name}"
+
+    return response
 
 
 @router.get("/{affiliate_id}/tree", response_model=TreeNodeResponse)
