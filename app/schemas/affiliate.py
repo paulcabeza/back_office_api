@@ -96,6 +96,7 @@ class AffiliateListResponse(BaseModel):
     status: str
     kit_tier: str | None
     current_rank: str
+    created_by_username: str | None = None
     enrolled_at: datetime
 
     model_config = {"from_attributes": True}

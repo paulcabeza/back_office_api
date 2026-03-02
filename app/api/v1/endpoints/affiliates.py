@@ -119,7 +119,25 @@ async def list_affiliates(
 
     result = await db.execute(query)
     affiliates = result.scalars().all()
-    return [AffiliateListResponse.model_validate(a) for a in affiliates]
+
+    # Batch-resolve creator usernames to avoid N+1 queries
+    creator_ids = {a.created_by_user_id for a in affiliates if a.created_by_user_id}
+    username_map: dict[uuid.UUID, str] = {}
+    if creator_ids:
+        creators = await db.execute(
+            select(User.id, User.username, User.first_name, User.last_name).where(
+                User.id.in_(creator_ids)
+            )
+        )
+        for row in creators:
+            username_map[row.id] = row.username or f"{row.first_name} {row.last_name}"
+
+    responses = []
+    for a in affiliates:
+        resp = AffiliateListResponse.model_validate(a)
+        resp.created_by_username = username_map.get(a.created_by_user_id)  # type: ignore[arg-type]
+        responses.append(resp)
+    return responses
 
 
 @router.get("/{affiliate_id}", response_model=AffiliateResponse)
