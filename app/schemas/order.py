@@ -41,6 +41,25 @@ class OrderResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class OrderListResponse(BaseModel):
+    """Lightweight order for list views (no nested items)."""
+    id: uuid.UUID
+    order_number: str
+    affiliate_id: uuid.UUID
+    affiliate_name: str = ""
+    affiliate_code: str = ""
+    order_type: str
+    status: str
+    total: Decimal
+    total_pv: Decimal
+    total_bv: Decimal
+    payment_method: str | None
+    paid_at: datetime | None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
 class ConfirmPaymentRequest(BaseModel):
     """Request body for confirming payment on an order."""
     payment_method: str = Field(min_length=1, max_length=30)
