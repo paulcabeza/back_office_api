@@ -10,6 +10,7 @@ from fastapi import HTTPException, status as http_status
 from app.core.deps import get_current_user, require_permission
 from app.db.session import get_db
 from app.models.affiliate import Affiliate
+from app.models.order import Order
 from app.models.user import User
 from app.schemas.affiliate import AffiliateListResponse, AffiliateResponse, EnrollmentRequest, TreeNodeResponse
 from app.schemas.order import EnrollmentResponse, OrderResponse
@@ -218,6 +219,18 @@ async def delete_affiliate(
 
     affiliate.deleted_at = func.now()
 
+    # Cancel any pending orders for this affiliate
+    pending_orders = await db.execute(
+        select(Order).where(
+            Order.affiliate_id == affiliate_id,
+            Order.status == "pending_payment",
+        )
+    )
+    cancelled_count = 0
+    for order in pending_orders.scalars():
+        order.status = "cancelled"
+        cancelled_count += 1
+
     audit = AuditLog(
         tenant_id=affiliate.tenant_id,
         user_id=current_user.id,
@@ -227,6 +240,7 @@ async def delete_affiliate(
         new_values={
             "affiliate_code": affiliate.affiliate_code,
             "email": affiliate.email,
+            "cancelled_orders": cancelled_count,
         },
     )
     db.add(audit)

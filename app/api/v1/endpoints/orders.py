@@ -24,8 +24,13 @@ async def list_orders(
     skip: int = Query(default=0, ge=0),
     limit: int = Query(default=50, ge=1, le=100),
 ):
-    """List orders with optional status filter. Defaults to pending_payment."""
-    query = select(Order)
+    """List orders with optional status filter. Defaults to pending_payment.
+    Excludes orders from soft-deleted affiliates."""
+    query = (
+        select(Order)
+        .join(Affiliate, Order.affiliate_id == Affiliate.id)
+        .where(Affiliate.deleted_at.is_(None))
+    )
     if order_status:
         query = query.where(Order.status == order_status)
     query = query.order_by(Order.created_at.desc()).offset(skip).limit(limit)
