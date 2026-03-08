@@ -153,10 +153,67 @@ Las ideas #1 y #5 tienen la probabilidad mas alta (40-45%) y se pueden **combina
 - Dolor cuantificable: "perdi este cliente porque no respondi rapido"
 - Competencia enterprise (ServiceTitan $500+/mes) deja espacio para solucion simple y barata
 
+## Descubrimiento clave: contacto directo con contratista
+
+### Contexto
+
+Primo del fundador en **Dallas, Texas** — contratista electricista, dueño de **M-Electric**.
+Ya se le han construido 4 proyectos de software como freelance:
+
+| Proyecto | Que hacia | Estado |
+|----------|-----------|--------|
+| Sitio web | Presencia online de M-Electric | Entregado y en uso |
+| Sistema de pedidos/costos | Control de materiales y costos por trabajo | Entregado, **nunca lo uso** |
+| Control de permisos de obra | Permisos por estado/ciudad donde labora | Entregado, **nunca lo uso** |
+| Tracking de empleados + payroll | GPS via navegador, horas por ubicacion, calculo de pago semanal | Entregado, **nunca lo uso** |
+
+### Analisis: por que esto es una ventaja enorme
+
+El fundador ya supero las etapas mas dificiles sin darse cuenta:
+1. **Nicho identificado** — contratistas electricistas en USA
+2. **Cliente potencial real** — primo con negocio activo en Dallas
+3. **Dolores conocidos** — costos, permisos, payroll, tracking
+4. **Confianza ganada** — relacion familiar + historial de trabajo juntos
+5. **Conocimiento de la industria** — 4 proyectos construidos para el sector
+
+### Insight critico: 3 de 4 sistemas no fueron adoptados
+
+Esto revela un patron fundamental del mercado de trades:
+
+> Los contratistas SABEN que tienen problemas y QUIEREN soluciones, pero NO ADOPTAN software complejo.
+
+La industria es la menos digitalizada no porque no haya software, sino porque
+**el software existente no se adapta a como trabajan ellos** (en la calle, desde el telefono, sin tiempo para meter datos).
+
+### Hipotesis sobre por que no uso los sistemas
+
+| Posible razon | Implicacion para el producto |
+|---------------|------------------------------|
+| "No tengo tiempo para meterle datos" | Necesita automatizacion — IA que haga el trabajo por el |
+| "Es muy complicado" | Necesita algo ultra simple, tipo responder un SMS |
+| "Mis empleados no lo usan" | El producto debe estar disenado para los empleados, no solo el dueno |
+| "Lo resuelvo con Excel/papel" | La solucion tiene que ser MEJOR que Excel, no solo diferente |
+| "Se me olvidaba entrar" | Necesita notificaciones push y automatizacion, no un dashboard |
+
+**PENDIENTE**: Llamar al primo y preguntar directamente la razon real.
+
+### Preguntas clave para validacion (llamada con primo)
+
+1. "¿Por que no usaste los sistemas que te hice?" (sin juzgar, solo escuchar)
+2. "¿Que es lo que mas tiempo te quita en el dia a dia?"
+3. "¿Como conseguis nuevos clientes? ¿Cuantos leads perdes por no responder rapido?"
+4. "¿Cuanto pagas por software al mes? (ServiceTitan, Jobber, Housecall Pro, algo?)"
+5. "¿Tenes amigos contratistas que tengan los mismos problemas?"
+6. "Si pudieras resolver UN solo problema con tecnologia, ¿cual seria?"
+7. "¿Como manejas los estimados/cotizaciones hoy?"
+
 ## Proximos pasos
 
-- [ ] Elegir idea final
-- [ ] Definir MVP tecnico minimo (2-4 semanas de desarrollo)
-- [ ] Validar con 5-10 contratistas/negocios reales
-- [ ] Construir MVP
-- [ ] Lanzar y conseguir primeros 5 clientes pagando
+- [ ] **PRIORIDAD 1**: Llamar al primo (M-Electric, Dallas) — entrevista de validacion
+- [ ] Entender por que no adopto los 3 sistemas anteriores
+- [ ] Identificar el dolor #1 real (no el que asumimos)
+- [ ] Definir MVP tecnico minimo basado en la entrevista
+- [ ] Construir MVP (2-4 semanas)
+- [ ] Validar con primo como primer usuario beta
+- [ ] Pedir referidos a otros contratistas en Dallas
+- [ ] Escalar a 5-10 clientes pagando
